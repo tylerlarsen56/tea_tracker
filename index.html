@@ -2684,6 +2684,43 @@
     reader.readAsText(file);
   });
 
+  async function loadDefaultCSV() {
+    const filename = 'tea_prices_2026-09-12.csv';
+
+    try {
+        const response = await fetch(filename);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const csvText = await response.text();
+
+        allRows = rowsFromCSVText(csvText);
+        computeGlobalPgSortedValues();
+
+        dataSource = 'csv';
+        dbRunDates = [];
+        dbCurrentRunDate = null;
+        dbPreviousRunDate = null;
+        newListingUrls = null;
+        state.showWhatsNew = false;
+
+        setFileNameLabel(filename);
+        rebuildFilterOptions();
+        applyStockButtonUI();
+        applySortButtonUI();
+        applyWhatsNewButtonUI();
+        render();
+
+        console.log(`Automatically loaded ${filename}`);
+    } catch (error) {
+        console.error('Could not automatically load CSV:', error);
+    }
+}
+
+loadDefaultCSV();
+
   // sql.js needs its .wasm binary fetched separately from the same
   // cdnjs folder as the sql-wasm.js <script> tag above - initSqlJs()
   // handles that itself once told where to look via locateFile. Only
