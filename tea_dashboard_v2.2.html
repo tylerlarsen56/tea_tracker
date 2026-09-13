@@ -1,0 +1,3383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tea Price Tracker — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ---- Base chrome: derived from the swatch set + the yixing teapot photo ---- */
+    --bg:        #1C1613;
+    --surface:   #302726;   /* swatch: dark warm brown */
+    --surface-2: #3A2F2B;
+    --line:      #4A3C36;
+    --line-soft: #362C27;
+    --ink:       #E9DFE1;   /* swatch: pale cream */
+    --ink-dim:   #A99485;
+    --ink-faint: #7D6C60;
+    --amber:     #D1A052;   /* gold */
+    --amber-ink: #241A0B;
+    --gold-flare:#F0C868;   /* brighter gold, used only for background glow */
+    --jade:      #7C9A80;   /* in-stock indicator */
+    --rust:      #B1766E;   /* swatch: terracotta/rust, used for out-of-stock + Ripe Puer */
+
+    /* ---- Tea-type tag colors: warm/varied, "appropriate" per type ---- */
+    --tag-raw-puer:   #93A66B;  /* young sheng - muted olive/vegetal */
+    --tag-ripe-puer:  #B1766E;  /* swatch terracotta - fermented, earthy */
+    --tag-heicha:     #8B5A4E;  /* teapot clay brown - dark aged */
+    --tag-oolong:     #C98A46;  /* warm amber-orange - semi-oxidized */
+    --tag-black:      #A24A3D;  /* deep brick red - fully oxidized */
+    --tag-white:      #D8C9B0;  /* pale downy */
+    --tag-green:      #6FA34F;  /* fresh green - unoxidized */
+    --tag-yellow:     #B99A3B;  /* mellow mustard */
+    --tag-purple:     #8F6E92;  /* dusty plum */
+    --tag-other:      #8A7A70;  /* neutral */
+
+    /* ---- Teaware / Tea Tools: deliberately cool blue-grey (from swatches),
+       so accessories read visually as a separate, non-tea family ---- */
+    --tag-teaware:    #697584;  /* swatch: slate blue-grey */
+    --tag-tools:      #555D72;  /* swatch: navy-slate */
+    --tag-tea-pet:    #9C7A6B;  /* NEW v1.5: warm unglazed-clay tone - close kin to teaware/tools, but distinct */
+
+    --font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --font-ui:      'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
+    --font-mono:    'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ height:100%; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-ui);
+    font-size:15px;
+    line-height:1.5;
+  }
+
+  /* ---------- Decorative background glow (bugfix, v1.5) ----------
+     This used to be two radial-gradient layers on `body` itself,
+     positioned with percentages ("88% -8%", "-8% 108%"). Percentage
+     background-position is resolved against the FULL element box, not
+     the viewport - and since body's actual height grows with the page's
+     content (more results, wider filters, etc.), those percentages
+     pointed at a different pixel position depending on how tall the page
+     happened to be on a given load. In practice the page height stayed
+     close enough to constant (top-10 results, one screen's worth) that
+     the bottom-left glow's "108%" position consistently landed a few
+     hundred pixels above the true bottom edge - right on top of roughly
+     the 8th listing - no matter what filters were applied, which is the
+     "yellowish glare on listing 8" bug.
+     Fix: pin the glow to the VIEWPORT instead of the document, with a
+     fixed-position, full-viewport layer sitting behind everything. Now
+     it's two soft corner accents on the visible window, the way it
+     clearly was meant to look, and it can't re-attach itself to a
+     particular row again - including once "Show all listings" (v1.5)
+     makes the page much taller than one screen. */
+  .bg-decor{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:
+      radial-gradient(ellipse 900px 560px at 88% -8%, rgba(240,200,104,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 520px at -8% 108%, rgba(240,200,104,0.06), transparent 62%);
+  }
+  .app{ position:relative; z-index:1; }
+  a{ color:inherit; }
+  button{ font-family:inherit; }
+  ::selection{ background:var(--amber); color:var(--amber-ink); }
+
+  :focus-visible{
+    outline:2px solid var(--amber);
+    outline-offset:2px;
+  }
+
+  /* ---------- Layout shell ---------- */
+  .app{
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
+
+  header.top{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    padding:28px 32px 22px;
+    border-bottom:1px solid var(--line);
+    background:var(--surface);
+  }
+  header.top h1{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:28px;
+    margin:0 0 4px;
+    letter-spacing:0.2px;
+  }
+  header.top p{
+    margin:0;
+    color:var(--ink-dim);
+    font-size:13.5px;
+    max-width:46ch;
+  }
+  .load-controls{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-shrink:0;
+  }
+  .file-name{
+    font-size:12.5px;
+    color:var(--ink-faint);
+    max-width:44ch;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .btn-primary{
+    background:var(--amber);
+    color:var(--amber-ink);
+    border:none;
+    padding:10px 18px;
+    font-weight:600;
+    font-size:13.5px;
+    cursor:pointer;
+    border-radius:3px;
+  }
+  .btn-primary:hover{ filter:brightness(1.08); }
+
+  main.layout{
+    flex:1;
+    display:grid;
+    grid-template-columns:260px 1fr;
+    gap:0;
+  }
+  @media (max-width: 820px){
+    main.layout{ grid-template-columns:1fr; }
+  }
+
+  /* ---------- Sidebar / filters ---------- */
+  aside.filters{
+    border-right:1px solid var(--line);
+    background:var(--surface);
+    padding:24px 20px 32px;
+  }
+  @media (max-width: 820px){
+    aside.filters{ border-right:none; border-bottom:1px solid var(--line); }
+  }
+  .filter-group{
+    margin-bottom:22px;
+  }
+  .filter-group label.field-label{
+    display:block;
+    font-size:11.5px;
+    color:var(--ink-faint);
+    margin-bottom:7px;
+    font-weight:500;
+  }
+  select.field{
+    width:100%;
+    background:var(--surface-2);
+    color:var(--ink);
+    border:1px solid var(--line);
+    padding:9px 10px;
+    font-size:13.5px;
+    font-family:inherit;
+    border-radius:3px;
+    appearance:none;
+    background-image:linear-gradient(45deg, transparent 50%, var(--ink-faint) 50%), linear-gradient(135deg, var(--ink-faint) 50%, transparent 50%);
+    background-position:calc(100% - 16px) center, calc(100% - 11px) center;
+    background-size:5px 5px, 5px 5px;
+    background-repeat:no-repeat;
+  }
+  select.field:hover{ border-color:var(--ink-faint); }
+
+  /* Custom website dropdown (needs logos, native <select> can't do that) */
+  .site-dropdown{ position:relative; }
+  .site-dropdown-btn{
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    background:var(--surface-2);
+    color:var(--ink);
+    border:1px solid var(--line);
+    padding:8px 10px;
+    font-size:13.5px;
+    font-family:inherit;
+    border-radius:3px;
+    cursor:pointer;
+    text-align:left;
+  }
+  .site-dropdown-btn:hover{ border-color:var(--ink-faint); }
+  .site-dropdown-btn .chev{ margin-left:auto; color:var(--ink-faint); font-size:10px; }
+  .site-dropdown-menu{
+    position:absolute;
+    top:calc(100% + 4px);
+    left:0;
+    right:0;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:3px;
+    z-index:20;
+    max-height:240px;
+    overflow-y:auto;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  }
+  .site-dropdown-menu[hidden]{ display:none; }
+  .site-option{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    width:100%;
+    background:none;
+    border:none;
+    color:var(--ink);
+    padding:9px 10px;
+    font-size:13.5px;
+    font-family:inherit;
+    text-align:left;
+    cursor:pointer;
+  }
+  .site-option:hover, .site-option:focus-visible{ background:var(--line-soft); }
+  .site-option.active{ color:var(--amber); }
+
+  /* ---------- Tea type multi-select checkboxes (v1.7) ----------
+     Reuses the .site-dropdown / .site-dropdown-menu / .site-option shell
+     from the website dropdown above, but each option gets a checkbox
+     indicator instead of just an "active" text color, and the menu stays
+     open across clicks so several types can be ticked in one pass. */
+  .type-checkbox{
+    width:14px; height:14px;
+    border:1px solid var(--ink-faint);
+    border-radius:3px;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px;
+    line-height:1;
+    color:var(--amber-ink);
+    background:var(--surface-2);
+  }
+  .type-checkbox.checked{
+    background:var(--amber);
+    border-color:var(--amber);
+  }
+
+  .favicon{
+    width:16px; height:16px;
+    border-radius:3px;
+    flex-shrink:0;
+    background:var(--line-soft);
+    object-fit:cover;
+  }
+  .favicon-fallback{
+    width:16px; height:16px;
+    border-radius:50%;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:600;
+    color:var(--amber-ink);
+    font-family:var(--font-ui);
+  }
+
+  /* Toggle-style buttons: in-stock cycle + sort direction pair */
+  .toggle-btn{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--surface-2);
+    color:var(--ink);
+    border:1px solid var(--line);
+    padding:9px 10px;
+    font-size:13.5px;
+    font-family:inherit;
+    border-radius:3px;
+    cursor:pointer;
+  }
+  .toggle-btn:hover{ border-color:var(--ink-faint); }
+  .toggle-btn .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--ink-faint);
+    flex-shrink:0;
+  }
+  .toggle-btn.state-in .dot{ background:var(--jade); }
+  .toggle-btn.state-out .dot{ background:var(--rust); }
+  /* Simple on/off toggles (year-range mode) reuse .toggle-btn but just
+     need a plain active/inactive look rather than the 3-state cycle
+     above. */
+  .toggle-btn.active{ border-color:var(--amber); color:var(--amber); }
+  .toggle-btn.active .dot{ background:var(--amber); }
+
+  .sort-pair{ display:flex; gap:8px; }
+  .sort-btn{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    background:var(--surface-2);
+    color:var(--ink-dim);
+    border:1px solid var(--line);
+    padding:9px 6px;
+    font-size:12.5px;
+    font-family:inherit;
+    border-radius:3px;
+    cursor:pointer;
+  }
+  .sort-btn:hover{ border-color:var(--ink-faint); }
+  .sort-btn.active{
+    background:rgba(204,154,68,0.14);
+    border-color:var(--amber);
+    color:var(--amber);
+    font-weight:500;
+  }
+  .sort-btn .arrow{ font-size:11px; }
+
+  .reset-link{
+    background:none;
+    border:none;
+    color:var(--ink-faint);
+    font-size:12.5px;
+    font-family:inherit;
+    text-decoration:underline;
+    text-underline-offset:2px;
+    cursor:pointer;
+    padding:0;
+    margin-top:4px;
+  }
+  .reset-link:hover{ color:var(--ink); }
+
+  .match-count{
+    margin-top:22px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+    font-size:12px;
+    color:var(--ink-faint);
+    line-height:1.6;
+  }
+  .match-count strong{ color:var(--ink-dim); font-weight:600; }
+
+  /* ---------- Main results area ---------- */
+  section.results{
+    padding:28px 36px 60px;
+    min-width:0;
+  }
+  .results-heading{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .results-heading h2{
+    font-family:var(--font-display);
+    font-size:19px;
+    font-weight:600;
+    margin:0;
+  }
+  .results-heading .sub{
+    font-size:12.5px;
+    color:var(--ink-faint);
+  }
+
+  .empty-state{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:14px;
+    padding:60px 4px;
+    max-width:52ch;
+  }
+  .empty-state svg{ color:var(--ink-faint); }
+  .empty-state h2{
+    font-family:var(--font-display);
+    font-size:21px;
+    margin:0;
+    font-weight:600;
+  }
+  .empty-state p{
+    margin:0;
+    color:var(--ink-dim);
+    font-size:14px;
+  }
+
+  .listing{
+    display:grid;
+    grid-template-columns:56px 1fr auto;
+    gap:18px;
+    align-items:start;
+    padding:20px 0;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .listing:first-child{ padding-top:4px; }
+
+  .rank{
+    font-family:var(--font-display);
+    font-size:34px;
+    font-weight:600;
+    color:var(--amber);
+    line-height:1;
+    padding-top:2px;
+  }
+
+  .listing-main{ min-width:0; }
+  .listing-meta-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:6px;
+    flex-wrap:wrap;
+  }
+  .site-tag{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    color:var(--ink-dim);
+  }
+  .category-badge{
+    font-size:11px;
+    padding:2px 8px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    color:var(--ink-dim);
+    font-weight:500;
+    /* color/border-color/background are set per-category inline via JS
+       (see CATEGORY_COLORS in the script) - these are just a fallback. */
+  }
+
+  /* ---------- Dataset toggle (Tea / Teaware & Tools) ---------- */
+  .dataset-pair{ margin-bottom:2px; }
+  .dataset-btn .count{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    color:var(--ink-faint);
+    margin-left:5px;
+  }
+  .dataset-btn.active .count{ color:var(--amber); opacity:0.8; }
+
+  #teaOnlyFilters[hidden]{ display:none; }
+  #sortGramsWrap{ flex:1; }
+  #sortGramsWrap .sort-btn{ width:100%; }
+  #sortGramsWrap[hidden]{ display:none; }
+  .year-badge{
+    font-size:11px;
+    color:var(--ink-faint);
+    font-family:var(--font-mono);
+  }
+
+  /* ---------- Year range search (v1.5) ---------- */
+  #yearFilterGroup[hidden]{ display:none; }
+  #yearRangeGroup[hidden]{ display:none; }
+  .year-range-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .year-range-input{
+    width:0; /* let flex:1 do the sizing instead of the input's intrinsic width */
+    flex:1;
+    text-align:center;
+  }
+  /* Chrome/Safari/Edge number-input spinner arrows - not useful here and
+     they crowd a field this narrow. */
+  .year-range-input::-webkit-outer-spin-button,
+  .year-range-input::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  .year-range-input[type="number"]{ appearance:textfield; -moz-appearance:textfield; }
+  .year-range-dash{
+    color:var(--ink-faint);
+    font-size:13px;
+    flex-shrink:0;
+  }
+  .year-mode-toggle{ margin-top:8px; }
+
+  /* ---------- Total weight range filter (v1.6) ----------
+     Same visual pattern as the year-range inputs above (a labeled pair
+     of number boxes with a dash between them), just for weight_grams
+     instead of year. Kept as its own class pair rather than reusing
+     .year-range-* so the two filters can be restyled independently
+     later without fighting over a shared class name. */
+  .weight-range-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .weight-range-input{
+    width:0;
+    flex:1;
+    text-align:center;
+  }
+  .weight-range-input::-webkit-outer-spin-button,
+  .weight-range-input::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  .weight-range-input[type="number"]{ appearance:textfield; -moz-appearance:textfield; }
+  .weight-range-dash{
+    color:var(--ink-faint);
+    font-size:13px;
+    flex-shrink:0;
+  }
+  .weight-range-unit{
+    display:block;
+    margin-top:6px;
+    font-size:11px;
+    color:var(--ink-faint);
+  }
+
+  /* ---------- Price range filter (v1.9) ----------
+     Same visual pattern again, just for price_usd instead of weight_grams
+     - see the comment on #priceFilterGroup in the markup for why this
+     lives outside #teaOnlyFilters. Own class pair rather than reusing
+     .weight-range-* for the same "restyle independently later" reason
+     given on .weight-range-* itself. */
+  .price-range-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .price-range-input{
+    width:0;
+    flex:1;
+    text-align:center;
+  }
+  .price-range-input::-webkit-outer-spin-button,
+  .price-range-input::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  .price-range-input[type="number"]{ appearance:textfield; -moz-appearance:textfield; }
+  .price-range-dash{
+    color:var(--ink-faint);
+    font-size:13px;
+    flex-shrink:0;
+  }
+  .price-range-unit{
+    display:block;
+    margin-top:6px;
+    font-size:11px;
+    color:var(--ink-faint);
+  }
+
+  /* ---------- "Show all listings" toggle (v1.5) ---------- */
+  .results-heading-left{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+    min-width:0;
+  }
+  .show-all-btn{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    font-size:12px;
+    font-family:inherit;
+    padding:7px 14px;
+    border-radius:20px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .show-all-btn:hover{ border-color:var(--amber); color:var(--amber); }
+
+  /* ---------- Visualize Listings button + panel (v1.6) ---------- */
+  .visualize-btn{
+    width:100%;
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:9px 10px;
+    font-size:13.5px;
+    font-weight:500;
+    font-family:inherit;
+    border-radius:3px;
+    cursor:pointer;
+  }
+  .visualize-btn:hover{ border-color:var(--amber); color:var(--amber); }
+  .visualize-btn.active{
+    background:rgba(209,160,82,0.14);
+    border-color:var(--amber);
+    color:var(--amber);
+  }
+  .visualize-btn:disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+  }
+  .visualize-btn:disabled:hover{
+    border-color:var(--line);
+    color:var(--ink);
+  }
+
+  .visualize-panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:22px 24px 20px;
+    margin-bottom:26px;
+  }
+  .visualize-panel h3{
+    font-family:var(--font-display);
+    font-size:17px;
+    font-weight:600;
+    margin:0 0 3px;
+  }
+  .visualize-panel .viz-sub{
+    font-size:12.5px;
+    color:var(--ink-faint);
+    margin-bottom:18px;
+  }
+  .viz-empty{
+    color:var(--ink-faint);
+    font-size:13.5px;
+    padding:6px 0 4px;
+  }
+  .viz-stats-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(104px, 1fr));
+    gap:10px;
+    margin-bottom:22px;
+  }
+  .viz-stat{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:10px 12px;
+  }
+  .viz-stat-label{
+    font-size:10.5px;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    margin-bottom:5px;
+  }
+  .viz-stat-value{
+    font-family:var(--font-mono);
+    font-size:15.5px;
+    color:var(--amber);
+    font-weight:500;
+  }
+  .viz-chart-wrap{ width:100%; }
+  .viz-chart-wrap svg{ width:100%; height:auto; display:block; overflow:visible; }
+  .viz-legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 16px;
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--line-soft);
+  }
+  .viz-legend-item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:11.5px;
+    color:var(--ink-dim);
+  }
+  .viz-legend-swatch{
+    width:9px; height:9px;
+    border-radius:50%;
+    flex-shrink:0;
+  }
+
+  .listing-title{
+    font-size:15px;
+    font-weight:500;
+    margin:0 0 3px;
+    text-decoration:none;
+    display:inline-block;
+  }
+  .listing-title:hover{ color:var(--amber); }
+  .listing-sub{
+    font-size:12.5px;
+    color:var(--ink-faint);
+  }
+  .out-of-stock-flag{
+    color:var(--rust);
+  }
+  /* NEW in v1.9: flags a $0-but-in-stock listing (see renderListing()) -
+     amber rather than the out-of-stock flag's rust, since this is a data
+     quality heads-up ("check before you trust this price") rather than
+     an availability problem. */
+  .zero-price-flag{
+    color:var(--amber);
+    font-weight:600;
+  }
+
+  .listing-price{
+    text-align:right;
+    font-family:var(--font-mono);
+    white-space:nowrap;
+  }
+  /* v1.7: the headline price/gram (or plain price) and, below it, the
+     listing's total price + weight each get their own row so a z-score
+     tag can sit right next to the figure it describes. */
+  .price-line{
+    display:flex;
+    align-items:baseline;
+    justify-content:flex-end;
+    gap:7px;
+  }
+  .price-detail-line{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:7px;
+    margin-top:3px;
+  }
+  .price-per-gram{
+    font-size:17px;
+    color:var(--amber);
+    font-weight:500;
+  }
+  .price-per-gram small{ font-size:11px; color:var(--ink-faint); font-family:var(--font-ui); }
+  .price-detail{
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+  /* percentile badge (v1.9 - replaces the old z-score badge; see the big
+     comment block above buildPercentileTag() in the script for why):
+     color is interpolated per-listing between --jade (cheapest, 0th
+     percentile) through --amber (typical, ~50th) to --rust (priciest,
+     100th) - see percentileColor() - so the badge itself communicates
+     "cheap/typical/pricey" at a glance even before reading the number.
+     Unlike a z-score, a percentile is already naturally bounded 0-100,
+     so there's no clamping to think about here. Computed against
+     price-per-gram only, same as the z-score badge it replaces - see
+     renderListing(). */
+  .percentile-tag{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    font-weight:600;
+    padding:1px 7px;
+    border-radius:20px;
+    border:1px solid transparent;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+
+  input[type="file"]{ display:none; }
+
+  /* =====================================================================
+     NEW in v2.2: "Make me a cart" feature.
+     ===================================================================== */
+
+  /* Sidebar trigger button - "outlined in gold" per the v2.2 spec, kept
+     visually distinct from .btn-primary (solid amber, used for the two
+     file-load buttons up in the header) and from .visualize-btn (plain
+     bordered, used for "Visualize Listings"/"See what's new") so it reads
+     as its own, slightly more special action. */
+  .cart-btn{
+    width:100%;
+    background:transparent;
+    color:var(--amber);
+    border:1.5px solid var(--amber);
+    padding:10px 14px;
+    font-size:13.5px;
+    font-weight:600;
+    font-family:inherit;
+    border-radius:3px;
+    cursor:pointer;
+  }
+  .cart-btn:hover{ background:rgba(209,160,82,0.10); }
+
+  /* ---- Modal shell ---- */
+  .cart-modal-overlay{
+    position:fixed;
+    inset:0;
+    z-index:100;
+    background:rgba(10,7,6,0.72);
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:32px 16px;
+    overflow-y:auto;
+  }
+  .cart-modal-overlay[hidden]{ display:none; }
+  .cart-modal{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:6px;
+    width:100%;
+    max-width:920px;
+    padding:26px 28px 32px;
+  }
+  .cart-modal-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:6px;
+  }
+  .cart-modal-header h2{
+    font-family:var(--font-display);
+    font-size:22px;
+    margin:0 0 4px;
+  }
+  .cart-modal-header p{
+    margin:0;
+    color:var(--ink-dim);
+    font-size:13px;
+    max-width:56ch;
+  }
+  .cart-modal-close{
+    background:transparent;
+    border:none;
+    color:var(--ink-faint);
+    font-size:22px;
+    line-height:1;
+    cursor:pointer;
+    padding:4px;
+  }
+  .cart-modal-close:hover{ color:var(--ink); }
+
+  /* ---- Param form ---- */
+  .cart-form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px 22px;
+    margin:20px 0 6px;
+  }
+  @media (max-width: 720px){
+    .cart-form-grid{ grid-template-columns:1fr; }
+  }
+  .cart-field{ min-width:0; }
+  .cart-field .field-label{
+    display:block;
+    font-size:11.5px;
+    color:var(--ink-faint);
+    margin-bottom:7px;
+    font-weight:500;
+  }
+  .cart-field input.field{
+    width:100%;
+    background:var(--surface-2);
+    color:var(--ink);
+    border:1px solid var(--line);
+    padding:9px 10px;
+    font-size:13.5px;
+    font-family:inherit;
+    border-radius:3px;
+  }
+  .cart-field input.field:hover{ border-color:var(--ink-faint); }
+  .cart-range-row{ display:flex; align-items:center; gap:8px; }
+  .cart-range-row input{ flex:1; min-width:0; }
+  .cart-range-dash{ color:var(--ink-faint); }
+
+  /* Checkbox multi-selects (tea types / websites / form factor) - a
+     scrollable box of the same .site-option-style rows used in the
+     sidebar's website/type dropdowns, just always-open instead of
+     hidden behind a button, since the modal has room to show them
+     directly. */
+  .cart-checkbox-box{
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:var(--surface-2);
+    max-height:140px;
+    overflow-y:auto;
+  }
+  .cart-checkbox-option{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    width:100%;
+    background:transparent;
+    border:none;
+    color:var(--ink);
+    padding:8px 10px;
+    font-size:13px;
+    font-family:inherit;
+    text-align:left;
+    cursor:pointer;
+  }
+  .cart-checkbox-option:hover{ background:var(--surface); }
+  .cart-checkbox-option .type-checkbox{
+    width:15px; height:15px;
+    border:1px solid var(--ink-faint);
+    border-radius:3px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px;
+    flex-shrink:0;
+    color:var(--amber-ink);
+  }
+  .cart-checkbox-option .type-checkbox.checked{
+    background:var(--amber);
+    border-color:var(--amber);
+  }
+  .cart-empty-note{
+    padding:8px 10px;
+    font-size:12.5px;
+    color:var(--ink-faint);
+  }
+
+  .cart-hint{
+    font-size:11.5px;
+    color:var(--ink-faint);
+    margin-top:5px;
+  }
+  .cart-error{
+    color:var(--rust);
+    font-size:12.5px;
+    margin:4px 0 0;
+  }
+
+  .cart-generate-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-top:18px;
+    flex-wrap:wrap;
+  }
+
+  /* ---- Results ---- */
+  .cart-results{ margin-top:26px; }
+  .cart-results-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+    border-top:1px solid var(--line);
+    padding-top:20px;
+  }
+  .cart-results-header h3{
+    font-family:var(--font-display);
+    font-size:17px;
+    margin:0;
+  }
+  .cart-reroll-btn{
+    background:transparent;
+    color:var(--ink-dim);
+    border:1px solid var(--line);
+    padding:7px 12px;
+    font-size:12.5px;
+    font-family:inherit;
+    border-radius:3px;
+    cursor:pointer;
+  }
+  .cart-reroll-btn:hover{ border-color:var(--ink-faint); color:var(--ink); }
+
+  .cart-options-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:18px;
+    align-items:start;
+  }
+  @media (max-width: 900px){
+    .cart-options-grid{ grid-template-columns:1fr; }
+  }
+  .cart-option-card{
+    border:1px solid var(--line);
+    border-radius:5px;
+    background:var(--surface-2);
+    padding:16px;
+    min-width:0;
+  }
+  .cart-option-title{
+    font-family:var(--font-display);
+    font-size:15.5px;
+    margin:0 0 3px;
+  }
+  .cart-option-summary{
+    font-size:12px;
+    color:var(--ink-dim);
+    font-family:var(--font-mono);
+    margin-bottom:4px;
+  }
+  .cart-option-mismatch{
+    font-size:11.5px;
+    color:var(--amber);
+    margin-bottom:10px;
+  }
+  .cart-option-empty{
+    font-size:12.5px;
+    color:var(--ink-faint);
+    padding:10px 0;
+  }
+  .cart-item{
+    display:grid;
+    grid-template-columns:24px 1fr;
+    gap:10px;
+    padding:10px 0;
+    border-top:1px solid var(--line-soft);
+  }
+  .cart-item:first-of-type{ border-top:none; padding-top:0; }
+  .cart-item .favicon,
+  .cart-item .favicon-fallback{ width:18px; height:18px; margin-top:2px; }
+  .cart-item-main{ min-width:0; }
+  .cart-item-title{
+    font-size:13px;
+    font-weight:500;
+    text-decoration:none;
+    display:block;
+    margin-bottom:2px;
+  }
+  .cart-item-title:hover{ color:var(--amber); }
+  .cart-item-sub{
+    font-size:11.5px;
+    color:var(--ink-faint);
+    margin-bottom:3px;
+  }
+  .cart-item-price{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--ink-dim);
+  }
+  .cart-item-price b{ color:var(--amber); font-weight:600; }
+</style>
+</head>
+<body>
+
+<div class="bg-decor" aria-hidden="true"></div>
+<div class="app">
+
+  <header class="top">
+    <div>
+      <h1>Tea Price Tracker</h1>
+      <p>Load a CSV or Database file from the weekly tracker script and filter down to find the best price-per-gram deals.</p>
+    </div>
+    <div class="load-controls">
+      <span class="file-name" id="fileName"></span>
+      <label class="btn-primary" for="csvInput">Load CSV</label>
+      <input type="file" id="csvInput" accept=".csv,text/csv">
+      <label class="btn-primary" for="dbInput">Load Database</label>
+      <input type="file" id="dbInput" accept=".db">
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <aside class="filters">
+
+      <div class="filter-group">
+        <span class="field-label">Showing</span>
+        <div class="sort-pair dataset-pair">
+          <button type="button" class="sort-btn dataset-btn active" id="datasetTeaBtn" data-dataset="tea">
+            Tea<span class="count" id="datasetTeaCount"></span>
+          </button>
+          <button type="button" class="sort-btn dataset-btn" id="datasetAccessoryBtn" data-dataset="accessories">
+            Teaware &amp; Tools<span class="count" id="datasetAccessoryCount"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label class="field-label" for="siteDropdownBtn">Website</label>
+        <div class="site-dropdown" id="siteDropdown">
+          <button type="button" class="site-dropdown-btn" id="siteDropdownBtn" aria-haspopup="listbox" aria-expanded="false">
+            <span id="siteDropdownLabel">All websites</span>
+            <span class="chev">▾</span>
+          </button>
+          <div class="site-dropdown-menu" id="siteDropdownMenu" role="listbox" aria-multiselectable="true" hidden></div>
+        </div>
+      </div>
+
+      <div id="teaOnlyFilters">
+        <div class="filter-group">
+          <label class="field-label" for="typeDropdownBtn">Tea type</label>
+          <div class="site-dropdown" id="typeDropdown">
+            <button type="button" class="site-dropdown-btn" id="typeDropdownBtn" aria-haspopup="listbox" aria-expanded="false">
+              <span id="typeDropdownLabel">All types</span>
+              <span class="chev">▾</span>
+            </button>
+            <div class="site-dropdown-menu" id="typeDropdownMenu" role="listbox" aria-multiselectable="true" hidden></div>
+          </div>
+        </div>
+
+        <div class="filter-group" id="yearFilterGroup">
+          <label class="field-label" for="yearSelect">Year</label>
+          <select class="field" id="yearSelect">
+            <option value="all">All years</option>
+          </select>
+        </div>
+
+        <div class="filter-group" id="yearRangeGroup" hidden>
+          <span class="field-label">Year range</span>
+          <div class="year-range-row">
+            <input type="number" class="field year-range-input" id="yearFromInput" placeholder="From" inputmode="numeric">
+            <span class="year-range-dash">–</span>
+            <input type="number" class="field year-range-input" id="yearToInput" placeholder="To" inputmode="numeric">
+          </div>
+        </div>
+
+        <div class="filter-group year-mode-toggle">
+          <button type="button" class="toggle-btn" id="yearRangeToggle">
+            <span id="yearRangeToggleLabel">Search a range</span>
+            <span class="dot"></span>
+          </button>
+        </div>
+
+        <div class="filter-group" id="gramsFilterGroup">
+          <span class="field-label">Total weight</span>
+          <div class="weight-range-row">
+            <input type="number" class="field weight-range-input" id="gramsFromInput" placeholder="Min" inputmode="numeric" min="0" step="1" value="0">
+            <span class="weight-range-dash">–</span>
+            <input type="number" class="field weight-range-input" id="gramsToInput" placeholder="Max" inputmode="numeric" min="0" step="1" value="1000">
+          </div>
+          <span class="weight-range-unit">In grams</span>
+        </div>
+      </div>
+
+      <!-- NEW in v1.9: price range filter, styled the same way as the
+           Total weight range above it, but kept OUTSIDE #teaOnlyFilters
+           since price_usd applies just as much to Teaware/Tools rows as
+           to tea rows (unlike weight, which only means anything for a
+           tea's price-per-gram) - so this stays visible and active in
+           both dataset views. Same "empty box = no bound" convention as
+           the other range filters, but - unlike weight, where 0-1000g
+           was a sensible default covering most tea listings - left empty
+           by default, since total price swings from well under $1
+           (a storage accessory) to several thousand dollars (a rare aged
+           cake) and there's no single range that "covers most listings"
+           the way there is for weight. -->
+      <div class="filter-group" id="priceFilterGroup">
+        <span class="field-label">Price range</span>
+        <div class="price-range-row">
+          <input type="number" class="field price-range-input" id="priceFromInput" placeholder="Min" inputmode="decimal" min="0" step="0.01">
+          <span class="price-range-dash">–</span>
+          <input type="number" class="field price-range-input" id="priceToInput" placeholder="Max" inputmode="decimal" min="0" step="0.01">
+        </div>
+        <span class="price-range-unit">Per listing, in USD</span>
+      </div>
+
+      <div class="filter-group">
+        <span class="field-label">Availability</span>
+        <button type="button" class="toggle-btn state-any" id="stockToggle">
+          <span id="stockToggleLabel">Any availability</span>
+          <span class="dot"></span>
+        </button>
+      </div>
+
+      <div class="filter-group">
+        <span class="field-label" id="sortFieldLabel">Sort by (one at a time)</span>
+        <div class="sort-pair">
+          <button type="button" class="sort-btn active" id="sortPriceBtn" data-field="price">
+            Price <span class="arrow" id="sortPriceArrow">↑</span>
+          </button>
+          <span id="sortGramsWrap">
+            <button type="button" class="sort-btn" id="sortGramsBtn" data-field="grams">
+              Grams <span class="arrow" id="sortGramsArrow">↑</span>
+            </button>
+          </span>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <button type="button" class="visualize-btn" id="visualizeBtn">Visualize Listings</button>
+      </div>
+
+      <div class="filter-group">
+        <button type="button" class="visualize-btn" id="whatsNewBtn" disabled>See what's new</button>
+      </div>
+
+      <!-- NEW in v2.2: opens the "Make me a cart" modal - see #cartModalOverlay
+           below and the cart-* functions in the script. -->
+      <div class="filter-group">
+        <button type="button" class="cart-btn" id="makeCartBtn">Make me a cart</button>
+      </div>
+
+      <button type="button" class="reset-link" id="resetBtn">Reset all filters</button>
+
+      <div class="match-count" id="matchCount" hidden></div>
+
+    </aside>
+
+    <section class="results">
+      <div id="resultsBody">
+        <div class="empty-state">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 16H30C30 24 25 30 18 30C11 30 6 24 6 16Z" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M30 18H33C35 18 36 20 36 22C36 24 35 26 33 26H30" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M14 8C14 8 12 10 14 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M20 6C20 6 18 8 20 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          <h2>No data loaded yet</h2>
+          <p>Click "Load CSV" above and select one of the <code>tea_prices_*.csv</code> files the tracker script writes to its <code>output/</code> folder.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===================================================================
+     NEW in v2.2: "Make me a cart" modal. Hidden by default; opened by
+     #makeCartBtn in the sidebar. All of the cart-generation logic lives
+     entirely in this page's own script block below (see the "Make me a
+     cart" section near the end) - nothing here talks to a server.
+     =================================================================== -->
+<div class="cart-modal-overlay" id="cartModalOverlay" hidden>
+  <div class="cart-modal" role="dialog" aria-modal="true" aria-labelledby="cartModalTitle">
+    <div class="cart-modal-header">
+      <div>
+        <h2 id="cartModalTitle">Make me a cart</h2>
+        <p>Set your parameters, then generate three different ways to spend the same budget. These are shopping lists to reference, not an actual checkout - nothing here is added to any site's real cart.</p>
+      </div>
+      <button type="button" class="cart-modal-close" id="cartModalCloseBtn" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="cart-form-grid">
+      <div class="cart-field">
+        <span class="field-label">Tea types</span>
+        <div class="cart-checkbox-box" id="cartTypeBox"></div>
+        <div class="cart-hint">Leave all unchecked for no restriction.</div>
+      </div>
+
+      <div class="cart-field">
+        <span class="field-label">Websites</span>
+        <div class="cart-checkbox-box" id="cartSiteBox"></div>
+        <div class="cart-hint">Leave all unchecked for no restriction.</div>
+      </div>
+
+      <div class="cart-field">
+        <span class="field-label">Tea form factor</span>
+        <div class="cart-checkbox-box" id="cartFormFactorBox"></div>
+        <div class="cart-hint">Leave all unchecked for no restriction.</div>
+      </div>
+
+      <div class="cart-field">
+        <span class="field-label" for="cartBudgetInput">Total budget</span>
+        <div class="cart-range-row">
+          <span class="cart-range-dash">$</span>
+          <input type="number" class="field" id="cartBudgetInput" placeholder="e.g. 150" inputmode="decimal" min="0" step="0.01">
+        </div>
+        <div class="cart-hint">Hard ceiling - carts will never go over this.</div>
+      </div>
+
+      <div class="cart-field">
+        <span class="field-label">Grams per cart item</span>
+        <div class="cart-range-row">
+          <input type="number" class="field" id="cartGramsMinInput" placeholder="Min" inputmode="numeric" min="0" step="1">
+          <span class="cart-range-dash">–</span>
+          <input type="number" class="field" id="cartGramsMaxInput" placeholder="Max" inputmode="numeric" min="0" step="1">
+        </div>
+        <div class="cart-hint">Size of each individual listing. Leave blank for no restriction.</div>
+      </div>
+
+      <div class="cart-field">
+        <span class="field-label">Years</span>
+        <div class="cart-range-row">
+          <input type="number" class="field" id="cartYearFromInput" placeholder="From" inputmode="numeric">
+          <span class="cart-range-dash">–</span>
+          <input type="number" class="field" id="cartYearToInput" placeholder="To" inputmode="numeric">
+        </div>
+        <div class="cart-hint">Leave blank for no restriction.</div>
+      </div>
+
+      <div class="cart-field">
+        <span class="field-label">Number of teas in cart</span>
+        <div class="cart-range-row">
+          <input type="number" class="field" id="cartCountMinInput" placeholder="Min" inputmode="numeric" min="1" step="1">
+          <span class="cart-range-dash">–</span>
+          <input type="number" class="field" id="cartCountMaxInput" placeholder="Max" inputmode="numeric" min="1" step="1">
+        </div>
+        <div class="cart-hint">A distinct tea (product) appears at most once per cart, regardless of how many sizes it comes in.</div>
+      </div>
+    </div>
+
+    <div class="cart-generate-row">
+      <button type="button" class="btn-primary" id="cartGenerateBtn">Generate Cart Options</button>
+      <button type="button" class="cart-reroll-btn" id="cartRerollBtn" hidden>🔀 Reroll Mixed Bag &amp; Something Special</button>
+    </div>
+    <p class="cart-error" id="cartErrorMsg" hidden></p>
+
+    <div class="cart-results" id="cartResults" hidden></div>
+  </div>
+</div>
+
+<!-- sql.js (SQLite compiled to WebAssembly) - used only when the person
+     clicks "Load Database" to read a tea_prices.db file written by
+     tea_db.py. Loaded from cdnjs rather than bundled so this file stays
+     a single lightweight HTML document; the CSV path above never
+     touches this at all. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.1/sql-wasm.js"></script>
+<script>
+(function(){
+
+  // -------------------------------------------------------------------
+  // Data model
+  // -------------------------------------------------------------------
+  // `allRows` holds every row from the loaded CSV, coerced into the right
+  // JS types (numbers stay numbers, empty CSV cells become null, the
+  // Python "True"/"False" string becomes a real boolean). Everything else
+  // in this file just filters/sorts/renders a view over this one array -
+  // there is no server and nothing is sent anywhere; the CSV never leaves
+  // the browser tab.
+  let allRows = [];
+  // NEW in v2.2: the sorted price-per-gram population that every
+  // listing's percentile badge is looked up against - see the big comment
+  // above buildPercentileTag() for why this is now the ENTIRE loaded
+  // dataset rather than just the currently-filtered rows. Rebuilt by
+  // computeGlobalPgSortedValues() once whenever allRows changes (CSV/DB
+  // load), not on every render - it doesn't depend on any filter state.
+  let globalPgSortedValues = null;
+  // Rebuilds globalPgSortedValues from the current allRows. Tea rows only
+  // (accessories have no price-per-gram anyway), out-of-stock included,
+  // $0 listings excluded - see the CHANGED-in-v2.2 comment above
+  // buildPercentileTag() for the reasoning behind each of those.
+  function computeGlobalPgSortedValues(){
+    const values = allRows
+      .filter(r => !ACCESSORY_CATEGORIES.has(r.category))
+      .filter(r => r.price_per_gram !== null && !Number.isNaN(r.price_per_gram))
+      .filter(r => r.price_usd !== 0)
+      .map(r => r.price_per_gram);
+    globalPgSortedValues = values.length ? values.sort((a, b) => a - b) : null;
+  }
+  // NEW v1.7: category values present in the currently loaded tea rows
+  // (accessories excluded), refreshed in rebuildFilterOptions(). Kept
+  // separate from state.types (the user's *selected* subset) so the
+  // type-dropdown menu can be redrawn after every checkbox click without
+  // re-scanning allRows each time.
+  let currentTeaTypes = [];
+  // NEW v1.8: same idea as currentTeaTypes above, but for the website
+  // dropdown now that it's a multi-select checkbox menu too (see
+  // renderSiteMenu()).
+  let currentSites = [];
+
+  // NEW v1.8 - Database-loading state. Only meaningful when a .db file
+  // (rather than a .csv) was the most recent thing loaded - see the
+  // "Load Database" file input handler and loadRowsFromDbResult().
+  //   dataSource       - 'csv' | 'db' | null (nothing loaded yet)
+  //   dbRunDates       - every distinct run_date found in the loaded
+  //                      .db, sorted newest-first (lexicographic sort
+  //                      works fine since run_date is always
+  //                      'YYYY-MM-DD')
+  //   dbCurrentRunDate / dbPreviousRunDate - the two most recent run
+  //                      dates, or null when there's no "previous" run
+  //                      to compare against (a CSV load, or a .db with
+  //                      only one run recorded so far)
+  //   newListingUrls   - Set of product_url values present in
+  //                      dbCurrentRunDate but NOT in dbPreviousRunDate
+  //                      (same "product_url NOT IN previous run" logic
+  //                      as get_new_listings() in tea_db.py), or null
+  //                      when there's no previous run to diff against.
+  //                      This is what powers "See what's new".
+  let dataSource = null;
+  let dbRunDates = [];
+  let dbCurrentRunDate = null;
+  let dbPreviousRunDate = null;
+  let newListingUrls = null;
+
+  const state = {
+    dataset: 'tea',      // 'tea' | 'accessories'
+    sites: [],           // CHANGED v1.8: array of selected website values (was a single 'all'/value string) - empty array means "all websites", same convention as `types` below
+    types: [],           // CHANGED v1.7: array of selected tea-type category values (was a single 'all'/value string) - empty array means "all types"
+    year: 'all',
+    yearMode: 'single',  // NEW v1.5: 'single' (yearSelect dropdown) | 'range' (yearFrom/yearTo)
+    yearFrom: null,      // NEW v1.5: inclusive lower bound, or null if not set
+    yearTo: null,        // NEW v1.5: inclusive upper bound, or null if not set
+    stock: 'any',       // 'any' | 'in' | 'out'
+    sortField: 'price',  // 'price' | 'grams' (tea dataset only - accessories always sort by price_usd)
+    sortDir: 'asc',       // 'asc' | 'desc'
+    showAll: false,      // NEW v1.5: false = top 10 only, true = every matching listing
+    gramsFrom: 0,        // NEW v1.6: inclusive lower bound on weight_grams, or null if not set
+    gramsTo: 1000,       // NEW v1.6: inclusive upper bound on weight_grams, or null if not set
+    priceFrom: null,     // NEW v1.9: inclusive lower bound on price_usd, or null if not set
+    priceTo: null,       // NEW v1.9: inclusive upper bound on price_usd, or null if not set
+    showVisualize: false, // NEW v1.6: whether the Visualize Listings panel is open
+    showWhatsNew: false,  // NEW v1.8: whether the "See what's new" filter (listings new vs. the previous run in a loaded .db) is active
+  };
+
+  // Teaware/Tea Tools/Tea Pet are their own dataset, never part of the
+  // tea-type list or the "All types" tea filter (v1.4; Tea Pet added v1.5).
+  const ACCESSORY_CATEGORIES = new Set(['Teaware', 'Tea Tools', 'Tea Pet']);
+
+  // Per-category tag colors (v1.4). Keys must match the `category` values
+  // the tracker script writes to the CSV exactly. Falls back to a neutral
+  // grey (--tag-other) for anything not listed here, so a brand-new
+  // category from a future script version still renders sensibly instead
+  // of breaking.
+  const CATEGORY_COLORS = {
+    'Raw Puer':  '#93A66B',
+    'Ripe Puer': '#B1766E',
+    'Heicha':    '#8B5A4E',
+    'Oolong':    '#C98A46',
+    'Black':     '#A24A3D',
+    'White':     '#D8C9B0',
+    'Green':     '#6FA34F',
+    'Yellow':    '#B99A3B',
+    'Purple':    '#8F6E92',
+    'Other':     '#8A7A70',
+    'Teaware':   '#697584',
+    'Tea Tools': '#555D72',
+    'Tea Pet':   '#9C7A6B',
+  };
+  function categoryColor(category){
+    return CATEGORY_COLORS[category] || CATEGORY_COLORS['Other'];
+  }
+  // Adds an alpha channel to a "#RRGGBB" color for a translucent badge fill.
+  function withAlpha(hex, alpha){
+    const n = parseInt(hex.slice(1), 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  // ---------------------------------------------------------------------
+  // Percentile tags (v1.9 - REPLACES the old z-score tag entirely): a
+  // "pctl 62" style badge next to a listing's price-per-gram, meaning
+  // "this listing's price-per-gram is more expensive than 62% of the
+  // other tea listings currently matching the active filters."
+  //
+  // WHY THIS REPLACED THE Z-SCORE: a z-score is a distance from the MEAN
+  // in standard deviations, which only reads sensibly when the underlying
+  // numbers are roughly bell-shaped. Price-per-gram across a tea catalog
+  // is heavily right-skewed instead - a handful of very expensive aged/
+  // rare cakes stretch the mean and stdev way up, which dragged every
+  // ordinary, actually-cheap listing toward a misleadingly-negative
+  // z-score and made the badge much less useful for spotting a real deal.
+  // A percentile rank has no such assumption - it's purely "where does
+  // this value fall among the others", so it stays meaningful no matter
+  // how skewed the distribution is.
+  //
+  // Computed against price-per-gram only. Teaware/Tools rows have no
+  // price-per-gram, so they still never get a badge at all, same as
+  // before.
+  //
+  // CHANGED in v2.2: this used to be scoped to "every tea listing matching
+  // the CURRENTLY ACTIVE filters" - which meant a listing's percentile
+  // badge could jump around purely because you changed an unrelated
+  // filter (e.g. narrowing to one website), even though the listing's own
+  // price didn't change at all. It's now computed against the ENTIRE
+  // loaded dataset instead (every tea row, across every site/type/year/
+  // filter), so a listing's percentile means "how does this compare to
+  // everything we've ever seen", a fixed reference point that doesn't
+  // shift under you as you filter. See computeGlobalPgSortedValues()
+  // below, which builds this once whenever allRows changes (CSV/DB load)
+  // rather than every render.
+  //   - Out-of-stock listings ARE included in this population (they're
+  //     still real market data worth comparing against).
+  //   - $0 listings are EXCLUDED (see the zero-price-flag logic above -
+  //     these are placeholder/not-yet-priced variants, not real prices,
+  //     and a price_per_gram of 0 would wrongly anchor the entire scale).
+  //
+  // Colors reuse the app's existing palette, same mapping as the old
+  // z-score badge: --jade (already used as the in-stock green) anchors
+  // the cheapest end (0th percentile), --amber (the app's accent color)
+  // sits at the middle (50th), and --rust (already used for out-of-stock
+  // + Ripe Puer) anchors the priciest end (100th). Unlike a z-score, a
+  // percentile is already bounded 0-100 by definition, so there's no
+  // clamping step needed here.
+  // ---------------------------------------------------------------------
+  const PCTL_COLOR_LOW  = '#7C9A80'; // --jade, 0th percentile (cheapest)
+  const PCTL_COLOR_MID  = '#D1A052'; // --amber, 50th percentile (typical)
+  const PCTL_COLOR_HIGH = '#B1766E'; // --rust, 100th percentile (priciest)
+
+  function hexToRgb(hex){
+    const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function lerp(a, b, t){ return a + (b - a) * t; }
+  function rgbToHex(r, g, b){
+    return '#' + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+  }
+  // Interpolates the 0..100 gradient (jade -> amber -> rust) at a given
+  // percentile.
+  function percentileColor(pct){
+    const t = Math.max(0, Math.min(100, pct)) / 100; // 0..1 across the whole range
+    const [c1, c2, localT] = t <= 0.5
+      ? [PCTL_COLOR_LOW, PCTL_COLOR_MID, t / 0.5]
+      : [PCTL_COLOR_MID, PCTL_COLOR_HIGH, (t - 0.5) / 0.5];
+    const [r1, g1, b1] = hexToRgb(c1);
+    const [r2, g2, b2] = hexToRgb(c2);
+    return rgbToHex(lerp(r1, r2, localT), lerp(g1, g2, localT), lerp(b1, b2, localT));
+  }
+  // Returns what percentage of `sortedValues` (a plain array of numbers,
+  // already sorted ascending - see render()) this `value` is more
+  // expensive than, or null when there's nothing to compare against.
+  // Ties are split down the middle (the "0.5 * countEqual" term) rather
+  // than all landing on the same edge, so a group of identically-priced
+  // listings all land at the percentile for the CENTER of that tie group
+  // instead of all claiming the bottom (or all claiming the top) of it.
+  // Uses binary search rather than a linear scan since this runs once per
+  // visible listing, every render.
+  function percentileRank(value, sortedValues){
+    if (value === null || value === undefined || !sortedValues || sortedValues.length === 0) return null;
+    const n = sortedValues.length;
+    let lo = 0, hi = n;
+    while (lo < hi){
+      const mid = (lo + hi) >> 1;
+      if (sortedValues[mid] < value) lo = mid + 1; else hi = mid;
+    }
+    const countLess = lo;
+    let lo2 = lo, hi2 = n;
+    while (lo2 < hi2){
+      const mid = (lo2 + hi2) >> 1;
+      if (sortedValues[mid] <= value) lo2 = mid + 1; else hi2 = mid;
+    }
+    const countLessOrEqual = lo2;
+    const countEqual = countLessOrEqual - countLess;
+    return ((countLess + 0.5 * countEqual) / n) * 100;
+  }
+  // Builds a <span class="percentile-tag"> element for a percentile, or
+  // returns null when there's nothing to show (see percentileRank).
+  function buildPercentileTag(pct){
+    if (pct === null) return null;
+    const tag = document.createElement('span');
+    tag.className = 'percentile-tag';
+    const color = percentileColor(pct);
+    tag.textContent = 'pctl ' + Math.round(pct);
+    tag.style.color = color;
+    tag.style.borderColor = color;
+    tag.style.background = withAlpha(color, 0.16);
+    tag.title = 'More expensive (per gram) than ' + Math.round(pct) + '% of listings matching the current filters';
+    return tag;
+  }
+
+  // Known site -> domain, used to build a favicon URL. Any site name in
+  // the CSV that ISN'T in this map still works fine - it just falls back
+  // to a plain lettered icon instead of a real favicon (see faviconEl()).
+  //
+  // CHANGED (v2.1): added the rest of the sites in the CSV (domains taken
+  // directly from their product_url column) so they get real favicons
+  // too, instead of only Mountain Stream Teas and Yunnan Sourcing.
+  //
+  // BUGFIX (v1.7): white2tea used to be listed here as 'white2tea.com',
+  // but Google's favicon service (google.com/s2/favicons) doesn't have a
+  // real favicon on file for that domain and, instead of failing, quietly
+  // returns its generic gray-globe placeholder image with a normal 200
+  // response. Since that's a "successful" image load, the <img>'s onerror
+  // handler in faviconEl() never fires, so the placeholder globe was
+  // rendered as if it were white2tea's real logo. white2tea is removed
+  // from this map so it always takes the fallback-icon path below instead
+  // (a colored circle with its first letter, "W") rather than silently
+  // showing a broken-looking placeholder. If any of the newly-added
+  // domains below turn out to have the same issue, remove that one entry
+  // the same way - everything else here is unaffected.
+  const SITE_DOMAINS = {
+    'Mountain Stream Teas': 'mountainstreamteas.com',
+    'Yunnan Sourcing': 'yunnansourcing.com',
+    'Jesse\'s Tea House': 'jessesteahouse.com',
+    'King Tea Mall': 'kingteamall.com',
+    'Meimei Fine Teas': 'meimeitea.com',
+    'Farmerleaf': 'farmerleaf.com',
+    'Crimson Lotus Tea': 'crimsonlotustea.com',
+    'Path of Cha': 'pathofcha.com',
+  };
+
+  // Deterministic fallback colors for the lettered icon, so a given site
+  // name always gets the same color rather than a random one each load.
+  const FALLBACK_COLORS = ['#D1A052', '#7C9A80', '#B1766E', '#697584', '#8E6C6B'];
+  function colorForName(name){
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+    return FALLBACK_COLORS[hash % FALLBACK_COLORS.length];
+  }
+
+  // -------------------------------------------------------------------
+  // Minimal RFC4180-style CSV parser.
+  //
+  // Deliberately not relying on a CDN library here: this file is meant to
+  // be a single, self-contained document you can open by double-clicking
+  // it, today and later when it's hosted on a real site, without needing
+  // anything to load from elsewhere. Handles quoted fields, commas and
+  // quote characters inside quoted fields, and CRLF/LF line endings -
+  // exactly what Python's csv module produces.
+  // -------------------------------------------------------------------
+  function parseCSV(text){
+    const rows = [];
+    let row = [];
+    let field = '';
+    let inQuotes = false;
+    const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    for (let i = 0; i < normalized.length; i++){
+      const c = normalized[i];
+      if (inQuotes){
+        if (c === '"'){
+          if (normalized[i + 1] === '"'){ field += '"'; i++; }
+          else { inQuotes = false; }
+        } else {
+          field += c;
+        }
+      } else {
+        if (c === '"'){ inQuotes = true; }
+        else if (c === ','){ row.push(field); field = ''; }
+        else if (c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+        else { field += c; }
+      }
+    }
+    if (field.length > 0 || row.length > 0){ row.push(field); rows.push(row); }
+    // Drop a possible trailing fully-empty row from a final newline.
+    return rows.filter(r => !(r.length === 1 && r[0] === ''));
+  }
+
+  function numOrNull(v){
+    if (v === undefined || v === null || v === '') return null;
+    const n = parseFloat(v);
+    return Number.isNaN(n) ? null : n;
+  }
+  function intOrNull(v){
+    if (v === undefined || v === null || v === '') return null;
+    const n = parseInt(v, 10);
+    return Number.isNaN(n) ? null : n;
+  }
+
+  function rowsFromCSVText(text){
+    const table = parseCSV(text);
+    if (table.length < 2) return [];
+    const header = table[0].map(h => h.trim());
+    const out = [];
+    for (let i = 1; i < table.length; i++){
+      const raw = table[i];
+      if (raw.length === 1 && raw[0].trim() === '') continue;
+      const obj = {};
+      header.forEach((key, idx) => { obj[key] = raw[idx] !== undefined ? raw[idx] : ''; });
+      out.push({
+        site: obj.site || 'Unknown',
+        category: obj.category || 'Other',
+        product_title: obj.product_title || '(untitled)',
+        variant_title: obj.variant_title || '',
+        form_factor: obj.form_factor || '',
+        price_usd: numOrNull(obj.price_usd),
+        weight_grams: numOrNull(obj.weight_grams),
+        price_per_gram: numOrNull(obj.price_per_gram),
+        year: intOrNull(obj.year),
+        in_stock: String(obj.in_stock).toLowerCase() === 'true',
+        product_url: obj.product_url || '#',
+      });
+    }
+    return out;
+  }
+
+  // -------------------------------------------------------------------
+  // Favicon / logo rendering
+  // -------------------------------------------------------------------
+  function faviconEl(siteName){
+    const domain = SITE_DOMAINS[siteName];
+    if (domain){
+      const img = document.createElement('img');
+      img.className = 'favicon';
+      img.src = 'https://www.google.com/s2/favicons?sz=64&domain=' + encodeURIComponent(domain);
+      img.alt = '';
+      img.loading = 'lazy';
+      img.onerror = function(){ img.replaceWith(fallbackEl(siteName)); };
+      return img;
+    }
+    return fallbackEl(siteName);
+  }
+  function fallbackEl(siteName){
+    const div = document.createElement('div');
+    div.className = 'favicon-fallback';
+    div.style.background = colorForName(siteName || '?');
+    div.textContent = (siteName || '?').trim().charAt(0).toUpperCase();
+    return div;
+  }
+
+  // -------------------------------------------------------------------
+  // Populating filter options from whatever data actually got loaded,
+  // rather than hardcoding them - so a new site, tea type, or year in a
+  // future CSV just shows up automatically.
+  // -------------------------------------------------------------------
+  function rebuildFilterOptions(){
+    const sites = [...new Set(allRows.map(r => r.site))].sort();
+    // Teaware/Tea Tools are a separate dataset (v1.4) - they never show up
+    // in the tea-type "All types" list, even when the CSV has them mixed
+    // in with everything else.
+    const teaRows = allRows.filter(r => !ACCESSORY_CATEGORIES.has(r.category));
+    const types = [...new Set(teaRows.map(r => r.category))].sort();
+    const years = [...new Set(teaRows.map(r => r.year).filter(y => y !== null))].sort((a, b) => b - a);
+
+    // Website dropdown (v1.8: multi-select checkbox menu, same pattern
+    // as the tea-type dropdown - see renderSiteMenu()/siteOption()).
+    currentSites = sites;
+    // Drop any previously-selected sites that no longer exist in the
+    // newly loaded data, same reasoning as the state.types line below.
+    state.sites = state.sites.filter(s => sites.includes(s));
+    renderSiteMenu();
+
+    // Tea type (v1.7: multi-select checkbox dropdown, see renderTypeMenu)
+    // + year: year stays a plain select, no logos needed there.
+    currentTeaTypes = types;
+    // Drop any previously-selected types that no longer exist in the
+    // newly loaded data, so a stale selection can't silently keep
+    // narrowing results against a CSV that doesn't have that type.
+    state.types = state.types.filter(t => types.includes(t));
+    renderTypeMenu();
+    fillSelect('yearSelect', ['all', ...years], v => v === 'all' ? 'All years' : String(v));
+
+    // Dataset toggle counts.
+    const accessoryCount = allRows.length - teaRows.length;
+    document.getElementById('datasetTeaCount').textContent = allRows.length ? teaRows.length : '';
+    document.getElementById('datasetAccessoryCount').textContent = allRows.length ? accessoryCount : '';
+  }
+
+  // Builds/rebuilds the website menu from currentSites + reflects
+  // state.sites in each option's checkbox. Called on load and after
+  // every option click - mirrors renderTypeMenu() below, just with a
+  // favicon added to each option.
+  function renderSiteMenu(){
+    const menu = document.getElementById('siteDropdownMenu');
+    menu.innerHTML = '';
+    menu.appendChild(siteOption('all', 'All websites', null));
+    currentSites.forEach(s => menu.appendChild(siteOption(s, s, s)));
+    updateSiteDropdownLabel();
+  }
+
+  function siteOption(value, label, siteNameForIcon){
+    const isAllOption = value === 'all';
+    const checked = isAllOption ? state.sites.length === 0 : state.sites.includes(value);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'site-option';
+    btn.setAttribute('role', 'option');
+    btn.setAttribute('aria-selected', String(checked));
+
+    const box = document.createElement('span');
+    box.className = 'type-checkbox' + (checked ? ' checked' : '');
+    box.textContent = checked ? '✓' : '';
+    btn.appendChild(box);
+
+    if (siteNameForIcon) btn.appendChild(faviconEl(siteNameForIcon));
+
+    const span = document.createElement('span');
+    span.textContent = label;
+    btn.appendChild(span);
+
+    btn.addEventListener('click', (e) => {
+      // See the matching comment in typeOption() below - stops the menu
+      // rebuild from breaking the outside-click-closes-the-menu handler.
+      e.stopPropagation();
+      if (isAllOption){
+        // "All websites" clears any specific selection rather than
+        // toggling itself - there's nothing meaningful about
+        // "un-checking" it.
+        state.sites = [];
+      } else {
+        const idx = state.sites.indexOf(value);
+        if (idx === -1) state.sites.push(value);
+        else state.sites.splice(idx, 1);
+      }
+      renderSiteMenu(); // redraw checks + label, menu stays open
+      render();
+    });
+    return btn;
+  }
+
+  function updateSiteDropdownLabel(){
+    const label = document.getElementById('siteDropdownLabel');
+    if (state.sites.length === 0) label.textContent = 'All websites';
+    else if (state.sites.length === 1) label.textContent = state.sites[0];
+    else label.textContent = state.sites.length + ' websites selected';
+  }
+
+  function fillSelect(id, values, labelFn){
+    const el = document.getElementById(id);
+    const current = el.value;
+    el.innerHTML = '';
+    values.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = labelFn(v);
+      el.appendChild(opt);
+    });
+    if (values.includes(current)) el.value = current;
+  }
+
+  // -------------------------------------------------------------------
+  // Website dropdown open/close behavior. CHANGED in v1.8: this is now a
+  // MULTI-select menu (see siteOption() above), same interaction as the
+  // tea-type dropdown just below - clicking an option toggles it and
+  // stays open so several sites can be picked in one visit; it only
+  // closes on an outside click or Escape.
+  // -------------------------------------------------------------------
+  const siteDropdownBtn = document.getElementById('siteDropdownBtn');
+  const siteDropdownMenu = document.getElementById('siteDropdownMenu');
+  function openSiteMenu(){
+    siteDropdownMenu.hidden = false;
+    siteDropdownBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeSiteMenu(){
+    siteDropdownMenu.hidden = true;
+    siteDropdownBtn.setAttribute('aria-expanded', 'false');
+  }
+  siteDropdownBtn.addEventListener('click', () => {
+    siteDropdownMenu.hidden ? openSiteMenu() : closeSiteMenu();
+  });
+
+  // -------------------------------------------------------------------
+  // Tea type dropdown open/close behavior (v1.7). Same shell as the
+  // website dropdown above, but this one is a MULTI-select: clicking an
+  // option toggles it and re-renders the menu's checkmarks in place
+  // rather than closing, so several types can be picked in one visit to
+  // the menu. It only closes on an outside click or Escape.
+  // -------------------------------------------------------------------
+  const typeDropdownBtn = document.getElementById('typeDropdownBtn');
+  const typeDropdownMenu = document.getElementById('typeDropdownMenu');
+  function openTypeMenu(){
+    typeDropdownMenu.hidden = false;
+    typeDropdownBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeTypeMenu(){
+    typeDropdownMenu.hidden = true;
+    typeDropdownBtn.setAttribute('aria-expanded', 'false');
+  }
+  typeDropdownBtn.addEventListener('click', () => {
+    typeDropdownMenu.hidden ? openTypeMenu() : closeTypeMenu();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('siteDropdown').contains(e.target)) closeSiteMenu();
+    if (!document.getElementById('typeDropdown').contains(e.target)) closeTypeMenu();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape'){ closeSiteMenu(); closeTypeMenu(); }
+  });
+
+  // Builds/rebuilds the tea-type menu from currentTeaTypes + reflects
+  // state.types in each option's checkbox. Called on load and after
+  // every option click (instead of closing the menu the way the
+  // single-select website dropdown does).
+  function renderTypeMenu(){
+    const menu = document.getElementById('typeDropdownMenu');
+    menu.innerHTML = '';
+    menu.appendChild(typeOption('all', 'All types'));
+    currentTeaTypes.forEach(t => menu.appendChild(typeOption(t, t)));
+    updateTypeDropdownLabel();
+  }
+
+  function typeOption(value, label){
+    const isAllOption = value === 'all';
+    const checked = isAllOption ? state.types.length === 0 : state.types.includes(value);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'site-option';
+    btn.setAttribute('role', 'option');
+    btn.setAttribute('aria-selected', String(checked));
+
+    const box = document.createElement('span');
+    box.className = 'type-checkbox' + (checked ? ' checked' : '');
+    box.textContent = checked ? '✓' : '';
+    btn.appendChild(box);
+
+    const span = document.createElement('span');
+    span.textContent = label;
+    btn.appendChild(span);
+
+    btn.addEventListener('click', (e) => {
+      // Without this, renderTypeMenu() below rebuilds the option buttons
+      // (menu.innerHTML = '') while this click is still bubbling, which
+      // detaches the clicked button from the DOM. The document-level
+      // outside-click listener then sees a target that's no longer
+      // "contained" by #typeDropdown and closes the menu after every
+      // single selection - stopping propagation avoids that entirely.
+      e.stopPropagation();
+      if (isAllOption){
+        // "All types" clears any specific selection rather than toggling
+        // itself - there's nothing meaningful about "un-checking" it.
+        state.types = [];
+      } else {
+        const idx = state.types.indexOf(value);
+        if (idx === -1) state.types.push(value);
+        else state.types.splice(idx, 1);
+      }
+      renderTypeMenu(); // redraw checks + label, menu stays open
+      render();
+    });
+    return btn;
+  }
+
+  function updateTypeDropdownLabel(){
+    const label = document.getElementById('typeDropdownLabel');
+    if (state.types.length === 0) label.textContent = 'All types';
+    else if (state.types.length === 1) label.textContent = state.types[0];
+    else label.textContent = state.types.length + ' types selected';
+  }
+
+  // -------------------------------------------------------------------
+  // Dataset toggle (v1.4): Tea vs Teaware & Tools are two separate
+  // datasets, not one combined "type" list. Switching datasets:
+  //   - hides the Tea type + Year filters entirely for Teaware/Tools,
+  //     since neither concept applies to a teapot or a tea towel
+  //   - hides the "Grams" sort option for Teaware/Tools, since
+  //     price-per-gram is meaningless for accessories - only plain price
+  //     (low-to-high / high-to-low) is offered, per spec
+  //   - Website and Availability stay available in both modes
+  // -------------------------------------------------------------------
+  const datasetTeaBtn = document.getElementById('datasetTeaBtn');
+  const datasetAccessoryBtn = document.getElementById('datasetAccessoryBtn');
+  function setDataset(value){
+    state.dataset = value;
+    datasetTeaBtn.classList.toggle('active', value === 'tea');
+    datasetAccessoryBtn.classList.toggle('active', value === 'accessories');
+    document.getElementById('teaOnlyFilters').hidden = (value === 'accessories');
+    document.getElementById('sortGramsWrap').hidden = (value === 'accessories');
+    document.getElementById('sortFieldLabel').textContent =
+      value === 'accessories' ? 'Sort by' : 'Sort by (one at a time)';
+    // "Grams" isn't a valid sort for accessories - fall back to Price so
+    // there's always a sensible active sort field.
+    if (value === 'accessories' && state.sortField === 'grams'){
+      state.sortField = 'price';
+      applySortButtonUI();
+    }
+    // Type/Year only ever apply to tea - clear them on switch so a
+    // leftover selection can't silently narrow results once hidden.
+    state.types = [];
+    renderTypeMenu();
+    state.year = 'all';
+    state.yearMode = 'single';
+    state.yearFrom = null;
+    state.yearTo = null;
+    state.showAll = false;
+    state.gramsFrom = 0;
+    state.gramsTo = 1000;
+    document.getElementById('yearSelect').value = 'all';
+    document.getElementById('yearFromInput').value = '';
+    document.getElementById('yearToInput').value = '';
+    document.getElementById('gramsFromInput').value = '0';
+    document.getElementById('gramsToInput').value = '1000';
+    applyYearModeUI();
+    render();
+  }
+  datasetTeaBtn.addEventListener('click', () => setDataset('tea'));
+  datasetAccessoryBtn.addEventListener('click', () => setDataset('accessories'));
+
+  // -------------------------------------------------------------------
+  // Year range search (v1.5): toggles between the plain "All years"
+  // dropdown and a "from year X to year Y" pair of number inputs. Only
+  // one is ever active at a time (mirrors state.yearMode), and switching
+  // modes clears whichever set of value(s) belonged to the other mode, so
+  // a leftover selection can't silently keep narrowing results once
+  // hidden - same defensive pattern as the dataset switch above.
+  // -------------------------------------------------------------------
+  const yearRangeToggle = document.getElementById('yearRangeToggle');
+  const yearFromInput = document.getElementById('yearFromInput');
+  const yearToInput = document.getElementById('yearToInput');
+
+  function applyYearModeUI(){
+    const isRange = state.yearMode === 'range';
+    document.getElementById('yearFilterGroup').hidden = isRange;
+    document.getElementById('yearRangeGroup').hidden = !isRange;
+    yearRangeToggle.classList.toggle('active', isRange);
+    document.getElementById('yearRangeToggleLabel').textContent =
+      isRange ? 'Searching a range' : 'Search a range';
+  }
+
+  yearRangeToggle.addEventListener('click', () => {
+    state.yearMode = state.yearMode === 'range' ? 'single' : 'range';
+    if (state.yearMode === 'single'){
+      // Leaving range mode - clear the range bounds so they can't keep
+      // narrowing results invisibly, and reset the dropdown to "All years".
+      state.yearFrom = null;
+      state.yearTo = null;
+      yearFromInput.value = '';
+      yearToInput.value = '';
+    } else {
+      // Entering range mode - the single-year dropdown no longer applies.
+      state.year = 'all';
+      document.getElementById('yearSelect').value = 'all';
+    }
+    applyYearModeUI();
+    render();
+  });
+
+  yearFromInput.addEventListener('input', (e) => {
+    const v = e.target.value;
+    state.yearFrom = v === '' ? null : parseInt(v, 10);
+    render();
+  });
+  yearToInput.addEventListener('input', (e) => {
+    const v = e.target.value;
+    state.yearTo = v === '' ? null : parseInt(v, 10);
+    render();
+  });
+
+  // -------------------------------------------------------------------
+  // Total weight range filter (v1.6): same "empty box = no bound" pattern
+  // as the year range inputs above, just for weight_grams. Unlike year
+  // range there's no separate on/off mode - it's a plain always-on range,
+  // pre-filled with 0-1000g since that covers the overwhelming majority
+  // of tea listings (most large-format items are the exception).
+  // -------------------------------------------------------------------
+  const gramsFromInput = document.getElementById('gramsFromInput');
+  const gramsToInput = document.getElementById('gramsToInput');
+  gramsFromInput.addEventListener('input', (e) => {
+    const v = e.target.value;
+    state.gramsFrom = v === '' ? null : parseFloat(v);
+    render();
+  });
+  gramsToInput.addEventListener('input', (e) => {
+    const v = e.target.value;
+    state.gramsTo = v === '' ? null : parseFloat(v);
+    render();
+  });
+
+  // -------------------------------------------------------------------
+  // Price range filter (v1.9): same "empty box = no bound" pattern as the
+  // year/weight range inputs above, just for price_usd. Unlike the weight
+  // range, this one applies to BOTH datasets (see the comment on
+  // #priceFilterGroup in the markup), so it's intentionally not touched
+  // by setDataset() or anything else that's tea-only.
+  // -------------------------------------------------------------------
+  const priceFromInput = document.getElementById('priceFromInput');
+  const priceToInput = document.getElementById('priceToInput');
+  priceFromInput.addEventListener('input', (e) => {
+    const v = e.target.value;
+    state.priceFrom = v === '' ? null : parseFloat(v);
+    render();
+  });
+  priceToInput.addEventListener('input', (e) => {
+    const v = e.target.value;
+    state.priceTo = v === '' ? null : parseFloat(v);
+    render();
+  });
+
+  // -------------------------------------------------------------------
+  // Availability toggle: cycles Any -> In stock only -> Out of stock only
+  // -------------------------------------------------------------------
+  const stockToggle = document.getElementById('stockToggle');
+  const stockLabel = document.getElementById('stockToggleLabel');
+  const STOCK_STATES = {
+    any: { next: 'in', label: 'Any availability', cls: 'state-any' },
+    in:  { next: 'out', label: 'In stock only', cls: 'state-in' },
+    out: { next: 'any', label: 'Out of stock only', cls: 'state-out' },
+  };
+  stockToggle.addEventListener('click', () => {
+    state.stock = STOCK_STATES[state.stock].next;
+    applyStockButtonUI();
+    render();
+  });
+  function applyStockButtonUI(){
+    const cfg = STOCK_STATES[state.stock];
+    stockLabel.textContent = cfg.label;
+    stockToggle.className = 'toggle-btn ' + cfg.cls;
+  }
+
+  // -------------------------------------------------------------------
+  // Sort buttons: only one field is ever "active". Clicking the field
+  // that's already active flips its direction; clicking the other field
+  // switches to it (starting ascending).
+  // -------------------------------------------------------------------
+  const sortPriceBtn = document.getElementById('sortPriceBtn');
+  const sortGramsBtn = document.getElementById('sortGramsBtn');
+  function handleSortClick(field){
+    if (state.sortField === field){
+      state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      state.sortField = field;
+      state.sortDir = 'asc';
+    }
+    applySortButtonUI();
+    render();
+  }
+  sortPriceBtn.addEventListener('click', () => handleSortClick('price'));
+  sortGramsBtn.addEventListener('click', () => handleSortClick('grams'));
+  function applySortButtonUI(){
+    sortPriceBtn.classList.toggle('active', state.sortField === 'price');
+    sortGramsBtn.classList.toggle('active', state.sortField === 'grams');
+    document.getElementById('sortPriceArrow').textContent = (state.sortField === 'price' && state.sortDir === 'desc') ? '↓' : '↑';
+    document.getElementById('sortGramsArrow').textContent = (state.sortField === 'grams' && state.sortDir === 'desc') ? '↓' : '↑';
+  }
+
+  // -------------------------------------------------------------------
+  // Visualize Listings toggle (v1.6): shows/hides the stats + dot-plot
+  // panel above the results list. The panel itself is built fresh inside
+  // render() from whatever's currently filtered, so this handler just
+  // flips the flag and re-renders.
+  // -------------------------------------------------------------------
+  const visualizeBtn = document.getElementById('visualizeBtn');
+  function applyVisualizeButtonUI(){
+    visualizeBtn.classList.toggle('active', state.showVisualize);
+    visualizeBtn.textContent = state.showVisualize ? 'Hide Visualization' : 'Visualize Listings';
+  }
+  visualizeBtn.addEventListener('click', () => {
+    state.showVisualize = !state.showVisualize;
+    applyVisualizeButtonUI();
+    render();
+  });
+
+  // -------------------------------------------------------------------
+  // "See what's new" toggle (v1.8): only ever usable when a .db file with
+  // at least two distinct run_dates has been loaded (see
+  // loadRowsFromDbResult(), which is what populates newListingUrls).
+  // When active it doesn't open a separate panel - it just adds one more
+  // condition inside getFilteredSorted() below, so it combines naturally
+  // with whatever site/type/year/stock filters are already set, same as
+  // every other filter on the page. Pressing it again clears the
+  // condition and returns to the normal dashboard.
+  // -------------------------------------------------------------------
+  const whatsNewBtn = document.getElementById('whatsNewBtn');
+  function applyWhatsNewButtonUI(){
+    const available = newListingUrls !== null;
+    whatsNewBtn.disabled = !available;
+    whatsNewBtn.classList.toggle('active', state.showWhatsNew);
+    whatsNewBtn.textContent = state.showWhatsNew ? 'Back to all listings' : "See what's new";
+    whatsNewBtn.title = available
+      ? ''
+      : 'Load a database file (.db) with at least two weekly runs recorded to compare against';
+  }
+  whatsNewBtn.addEventListener('click', () => {
+    if (newListingUrls === null) return; // disabled, but guard anyway
+    state.showWhatsNew = !state.showWhatsNew;
+    applyWhatsNewButtonUI();
+    render();
+  });
+
+  // -------------------------------------------------------------------
+  // Plain filter selects + reset
+  // -------------------------------------------------------------------
+  document.getElementById('yearSelect').addEventListener('change', (e) => { state.year = e.target.value; render(); });
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    state.sites = []; state.types = []; state.year = 'all'; state.stock = 'any';
+    state.sortField = 'price'; state.sortDir = 'asc';
+    state.yearMode = 'single'; state.yearFrom = null; state.yearTo = null;
+    state.showAll = false;
+    state.gramsFrom = 0; state.gramsTo = 1000;
+    state.priceFrom = null; state.priceTo = null;
+    state.showVisualize = false;
+    state.showWhatsNew = false;
+    renderSiteMenu();
+    renderTypeMenu();
+    document.getElementById('yearSelect').value = 'all';
+    document.getElementById('yearFromInput').value = '';
+    document.getElementById('yearToInput').value = '';
+    document.getElementById('gramsFromInput').value = '0';
+    document.getElementById('gramsToInput').value = '1000';
+    document.getElementById('priceFromInput').value = '';
+    document.getElementById('priceToInput').value = '';
+    applyStockButtonUI();
+    applySortButtonUI();
+    applyYearModeUI();
+    applyVisualizeButtonUI();
+    applyWhatsNewButtonUI();
+    setDataset('tea'); // also resets type/year and re-renders
+    rebuildFilterOptions(); // refresh "active" highlight on site + type menus
+    render();
+  });
+
+  // -------------------------------------------------------------------
+  // Filtering + sorting + rendering the top 10
+  // -------------------------------------------------------------------
+  function getFilteredSorted(){
+    let rows = allRows.filter(r => {
+      const isAccessory = ACCESSORY_CATEGORIES.has(r.category);
+      // Dataset split (v1.4): Tea mode never shows Teaware/Tools, and
+      // vice versa - these are two separate datasets, not one filtered by
+      // "type".
+      if (state.dataset === 'tea' && isAccessory) return false;
+      if (state.dataset === 'accessories' && !isAccessory) return false;
+
+      if (state.sites.length > 0 && !state.sites.includes(r.site)) return false;
+      // NEW in v1.8: "See what's new" narrows to only listings whose
+      // product_url wasn't present at all in the previous run stored in
+      // the loaded database (see loadRowsFromDbResult() for how
+      // newListingUrls gets computed - same "product_url NOT IN
+      // previous run" logic as get_new_listings() in tea_db.py).
+      if (state.showWhatsNew && (!newListingUrls || !newListingUrls.has(r.product_url))) return false;
+      // Type/Year filters only mean anything for tea - they're hidden in
+      // the UI for accessories, but guard here too in case state ever
+      // gets out of sync.
+      if (state.dataset === 'tea'){
+        if (state.types.length > 0 && !state.types.includes(r.category)) return false;
+        if (state.yearMode === 'range'){
+          // NEW in v1.5. A row with no parsed year can never match a
+          // range (there's nothing to compare), same treatment as it
+          // already got from the single-year dropdown.
+          if (state.yearFrom !== null && (r.year === null || r.year < state.yearFrom)) return false;
+          if (state.yearTo !== null && (r.year === null || r.year > state.yearTo)) return false;
+        } else if (state.year !== 'all' && String(r.year) !== state.year) {
+          return false;
+        }
+        // NEW in v1.6. Same treatment as the year range: a row with no
+        // parsed weight can never match a bound (nothing to compare), so
+        // it's excluded rather than silently passing through.
+        if (state.gramsFrom !== null && (r.weight_grams === null || r.weight_grams < state.gramsFrom)) return false;
+        if (state.gramsTo !== null && (r.weight_grams === null || r.weight_grams > state.gramsTo)) return false;
+      }
+      // NEW in v1.9: price range filter. Same "no value = can't match a
+      // bound" treatment as year/weight above. Deliberately OUTSIDE the
+      // `state.dataset === 'tea'` block above (unlike weight) since
+      // price_usd is just as meaningful for Teaware/Tools as for tea.
+      if (state.priceFrom !== null && (r.price_usd === null || r.price_usd < state.priceFrom)) return false;
+      if (state.priceTo !== null && (r.price_usd === null || r.price_usd > state.priceTo)) return false;
+      if (state.stock === 'in' && !r.in_stock) return false;
+      if (state.stock === 'out' && r.in_stock) return false;
+      return true;
+    });
+
+    // Accessories always sort by plain price (low-to-high / high-to-low
+    // per spec) since price-per-gram and weight don't mean anything for a
+    // teapot or a tea towel. Tea keeps the existing price-per-gram/weight
+    // toggle.
+    const key = state.dataset === 'accessories'
+      ? 'price_usd'
+      : (state.sortField === 'price' ? 'price_per_gram' : 'weight_grams');
+
+    // Rows missing the sort field always sink to the bottom, regardless
+    // of direction - there's no meaningful "cheapest" position for a
+    // listing with no parsed price-per-gram, weight, or price.
+    rows.sort((a, b) => {
+      const av = a[key], bv = b[key];
+      if (av === null && bv === null) return 0;
+      if (av === null) return 1;
+      if (bv === null) return -1;
+      return state.sortDir === 'asc' ? av - bv : bv - av;
+    });
+
+    return rows;
+  }
+
+  // -------------------------------------------------------------------
+  // Visualize Listings: summary stats + dot-plot "histogram" (v1.6)
+  //
+  // Colors are pulled from the same CATEGORY_COLORS map used for the
+  // category badges. They're written as plain hex here (rather than
+  // var(--tag-...)) because this markup gets dropped into an <svg> via
+  // innerHTML, and CSS custom properties aren't reliably resolved on SVG
+  // presentation attributes in every rendering context - hardcoding a
+  // couple of chrome colors below keeps the chart looking right
+  // regardless.
+  // -------------------------------------------------------------------
+  const VIZ_LINE_COLOR = '#4A3C36';    // matches --line
+  const VIZ_FAINT_COLOR = '#7D6C60';   // matches --ink-faint
+  const VIZ_WIDTH = 860;
+  const VIZ_MARGIN = { top: 14, right: 18, bottom: 30, left: 18 };
+  const VIZ_PLOT_MAX = 200; // cap on the dot-stack height, in svg units
+
+  function computeStats(values){
+    const n = values.length;
+    if (n === 0) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mean = values.reduce((a, b) => a + b, 0) / n;
+    const mid = Math.floor(n / 2);
+    const median = n % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+    let stdev = 0;
+    if (n > 1){
+      const variance = values.reduce((acc, v) => acc + (v - mean) * (v - mean), 0) / (n - 1);
+      stdev = Math.sqrt(variance);
+    }
+    return { n, mean, median, stdev, min: sorted[0], max: sorted[n - 1] };
+  }
+
+  function buildVisualizePanel(filtered){
+    const isAccessory = state.dataset === 'accessories';
+    // Price-per-gram is meaningless for a teapot or a tea towel, so
+    // accessories fall back to plain price - the same swap the sort
+    // control already makes elsewhere in this file.
+    const statKey = isAccessory ? 'price_usd' : 'price_per_gram';
+    const label = isAccessory ? 'price' : 'price per gram';
+    const fmt = v => isAccessory ? ('$' + v.toFixed(2)) : ('$' + v.toFixed(4) + '/g');
+
+    const points = filtered
+      .map(r => ({ v: r[statKey], cat: r.category }))
+      .filter(p => p.v !== null && !Number.isNaN(p.v));
+
+    const wrap = document.createElement('div');
+    wrap.className = 'visualize-panel';
+
+    const title = document.createElement('h3');
+    title.textContent = isAccessory ? 'Price distribution' : 'Price-per-gram distribution';
+    wrap.appendChild(title);
+
+    if (filtered.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'viz-empty';
+      empty.textContent = 'No listings match the current filters.';
+      wrap.appendChild(empty);
+      return wrap;
+    }
+
+    const sub = document.createElement('div');
+    sub.className = 'viz-sub';
+    sub.textContent = points.length === filtered.length
+      ? ('Across all ' + filtered.length + ' matching listing' + (filtered.length === 1 ? '' : 's'))
+      : ('Across ' + points.length + ' of ' + filtered.length + ' matching listings with a known ' + label);
+    wrap.appendChild(sub);
+
+    if (points.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'viz-empty';
+      empty.textContent = 'None of the currently filtered listings have a known ' + label + '.';
+      wrap.appendChild(empty);
+      return wrap;
+    }
+
+    const values = points.map(p => p.v);
+    const stats = computeStats(values);
+
+    const grid = document.createElement('div');
+    grid.className = 'viz-stats-grid';
+    const statDefs = [
+      ['Mean', fmt(stats.mean)],
+      ['Median', fmt(stats.median)],
+      ['Std dev', stats.n > 1 ? fmt(stats.stdev) : '—'],
+      ['Low', fmt(stats.min)],
+      ['High', fmt(stats.max)],
+      ['Listings', String(stats.n)],
+    ];
+    statDefs.forEach(([lbl, val]) => {
+      const card = document.createElement('div');
+      card.className = 'viz-stat';
+      card.innerHTML = '<div class="viz-stat-label">' + lbl + '</div><div class="viz-stat-value">' + val + '</div>';
+      grid.appendChild(card);
+    });
+    wrap.appendChild(grid);
+
+    // ---- dot plot ----
+    // The axis bounds are dynamic: they track the min/max of whatever is
+    // currently filtered, not a fixed global range, so the chart always
+    // uses its full width regardless of how narrow the filtered set is.
+    let minV = stats.min, maxV = stats.max;
+    if (minV === maxV){
+      const pad = minV === 0 ? 1 : Math.abs(minV) * 0.1;
+      minV -= pad; maxV += pad;
+    }
+    const plotWidth = VIZ_WIDTH - VIZ_MARGIN.left - VIZ_MARGIN.right;
+    // More points -> more (narrower) bins, within sane limits, so the
+    // plot resolves finer detail on a big filtered set without turning
+    // into a single wide smear on a small one.
+    const numBins = Math.max(8, Math.min(56, Math.round(Math.sqrt(points.length) * 1.4)));
+    const binWidth = plotWidth / numBins;
+    const radius = Math.max(1.6, Math.min(4.5, binWidth / 2 - 0.6));
+    const bins = Array.from({ length: numBins }, () => []);
+    points.forEach(p => {
+      let idx = Math.floor((p.v - minV) / (maxV - minV) * numBins);
+      if (idx >= numBins) idx = numBins - 1;
+      if (idx < 0) idx = 0;
+      bins[idx].push(p);
+    });
+    const maxCount = Math.max(1, ...bins.map(b => b.length));
+    // Dots stack from the axis upward, normally touching edge-to-edge;
+    // only if the tallest bin's stack would blow past VIZ_PLOT_MAX does
+    // the spacing compress (dots overlap slightly rather than the chart
+    // growing without bound).
+    const naturalSpacing = radius * 2 + 1;
+    const dotSpacing = Math.min(naturalSpacing, VIZ_PLOT_MAX / maxCount);
+    const plotHeight = maxCount * dotSpacing;
+    const baselineY = VIZ_MARGIN.top + plotHeight;
+    const svgHeight = baselineY + VIZ_MARGIN.bottom;
+
+    let dotsSvg = '';
+    bins.forEach((bin, i) => {
+      const cx = VIZ_MARGIN.left + (i + 0.5) * binWidth;
+      bin.forEach((p, k) => {
+        const cy = baselineY - (k + 0.5) * dotSpacing;
+        dotsSvg += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + radius.toFixed(1) + '" fill="' + categoryColor(p.cat) + '" fill-opacity="0.88"/>';
+      });
+    });
+
+    const tickCount = 5;
+    let ticksSvg = '';
+    for (let t = 0; t < tickCount; t++){
+      const frac = t / (tickCount - 1);
+      const x = VIZ_MARGIN.left + frac * plotWidth;
+      const val = minV + frac * (maxV - minV);
+      const anchor = t === 0 ? 'start' : (t === tickCount - 1 ? 'end' : 'middle');
+      ticksSvg += '<line x1="' + x.toFixed(1) + '" y1="' + baselineY.toFixed(1) + '" x2="' + x.toFixed(1) + '" y2="' + (baselineY + 4).toFixed(1) + '" stroke="' + VIZ_LINE_COLOR + '" stroke-width="1"/>';
+      ticksSvg += '<text x="' + x.toFixed(1) + '" y="' + (baselineY + 17).toFixed(1) + '" text-anchor="' + anchor + '" font-size="10" font-family="IBM Plex Mono, monospace" fill="' + VIZ_FAINT_COLOR + '">' + fmt(val) + '</text>';
+    }
+
+    const svgMarkup = '<svg viewBox="0 0 ' + VIZ_WIDTH + ' ' + svgHeight.toFixed(1) + '" xmlns="http://www.w3.org/2000/svg">' +
+      '<line x1="' + VIZ_MARGIN.left + '" y1="' + baselineY.toFixed(1) + '" x2="' + (VIZ_MARGIN.left + plotWidth).toFixed(1) + '" y2="' + baselineY.toFixed(1) + '" stroke="' + VIZ_LINE_COLOR + '" stroke-width="1"/>' +
+      ticksSvg + dotsSvg +
+      '</svg>';
+
+    const chartWrap = document.createElement('div');
+    chartWrap.className = 'viz-chart-wrap';
+    chartWrap.innerHTML = svgMarkup;
+    wrap.appendChild(chartWrap);
+
+    // Legend: only the categories actually present in this filtered set,
+    // most common first.
+    const catCounts = new Map();
+    points.forEach(p => catCounts.set(p.cat, (catCounts.get(p.cat) || 0) + 1));
+    const legend = document.createElement('div');
+    legend.className = 'viz-legend';
+    [...catCounts.entries()].sort((a, b) => b[1] - a[1]).forEach(([cat, count]) => {
+      const item = document.createElement('span');
+      item.className = 'viz-legend-item';
+      item.innerHTML = '<span class="viz-legend-swatch" style="background:' + categoryColor(cat) + '"></span>' + cat + ' (' + count + ')';
+      legend.appendChild(item);
+    });
+    wrap.appendChild(legend);
+
+    return wrap;
+  }
+
+  function render(){
+    const filtered = getFilteredSorted();
+    // NEW in v1.5: state.showAll toggles between the classic top-10 view
+    // and every matching row. displayed is what actually gets rendered;
+    // filtered.length is still used for the "N matching listings" counts.
+    const displayed = state.showAll ? filtered : filtered.slice(0, 10);
+    const body = document.getElementById('resultsBody');
+    const matchCount = document.getElementById('matchCount');
+
+    matchCount.hidden = allRows.length === 0;
+    matchCount.innerHTML = allRows.length
+      ? '<strong>' + filtered.length + '</strong> of ' + allRows.length + ' listings match'
+      : '';
+
+    if (allRows.length === 0) return; // keep the original empty state markup
+
+    body.innerHTML = '';
+
+    // CHANGED in v2.2: pgSortedValues is now just a reference to the
+    // pre-computed, dataset-wide globalPgSortedValues (see its definition
+    // up top and the big comment above buildPercentileTag()) rather than
+    // being rebuilt from `filtered` on every render - a listing's
+    // percentile no longer shifts based on which filters happen to be
+    // active. Accessories still never get a percentile tag (they have no
+    // price_per_gram at all), so this stays null for that dataset view.
+    const pgSortedValues = state.dataset === 'tea' ? globalPgSortedValues : null;
+
+    // NEW in v1.6: the Visualize Listings panel sits above the results,
+    // built fresh each render from the full filtered set (not the
+    // top-10/showAll-sliced `displayed`) so its stats and dot plot always
+    // describe everything the current filters actually match.
+    if (state.showVisualize){
+      body.appendChild(buildVisualizePanel(filtered));
+    }
+
+    if (displayed.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = state.showWhatsNew
+        ? '<h2>No new listings</h2><p>Nothing in the most recent run is new compared to ' + dbPreviousRunDate + '. Try loosening a filter, or click "See what\'s new" again to go back to all listings.</p>'
+        : '<h2>Nothing matches those filters</h2><p>Try loosening a filter or hitting "Reset all filters" on the left.</p>';
+      body.appendChild(empty);
+      return;
+    }
+
+    const sortLabel = state.dataset === 'accessories'
+      ? 'price'
+      : (state.sortField === 'price' ? 'price per gram' : 'weight');
+
+    const heading = document.createElement('div');
+    heading.className = 'results-heading';
+
+    const headingLeft = document.createElement('div');
+    headingLeft.className = 'results-heading-left';
+    const headingTitle = state.showAll
+      ? ('All ' + displayed.length + ' by ' + sortLabel)
+      : ('Top ' + displayed.length + ' by ' + sortLabel);
+    let headingSub = state.showAll
+      ? ('Showing all ' + filtered.length + ' matching listings')
+      : ('Showing ' + displayed.length + ' of ' + filtered.length + ' matching listings');
+    // NEW in v1.8: make it obvious when "See what's new" is filtering the
+    // results down to only the listings that are new since the previous
+    // run stored in the loaded database.
+    if (state.showWhatsNew && dbPreviousRunDate){
+      headingSub += ' \u00b7 new since ' + dbPreviousRunDate;
+    }
+    headingLeft.innerHTML = '<h2>' + headingTitle + '</h2><span class="sub">' + headingSub + '</span>';
+    heading.appendChild(headingLeft);
+
+    // "Show all listings" / "Only show top 10" toggle - only worth
+    // showing when there's actually more than a page of results to
+    // reveal.
+    if (filtered.length > 10){
+      const showAllBtn = document.createElement('button');
+      showAllBtn.type = 'button';
+      showAllBtn.className = 'show-all-btn';
+      showAllBtn.textContent = state.showAll ? 'Only show top 10' : 'Show all listings';
+      showAllBtn.addEventListener('click', () => {
+        state.showAll = !state.showAll;
+        render();
+      });
+      heading.appendChild(showAllBtn);
+    }
+
+    body.appendChild(heading);
+
+    displayed.forEach((r, idx) => {
+      body.appendChild(renderListing(r, idx + 1, pgSortedValues));
+    });
+  }
+
+  function renderListing(r, rank, pgSortedValues){
+    const el = document.createElement('div');
+    el.className = 'listing';
+
+    const rankEl = document.createElement('div');
+    rankEl.className = 'rank';
+    rankEl.textContent = rank;
+    el.appendChild(rankEl);
+
+    const main = document.createElement('div');
+    main.className = 'listing-main';
+
+    const metaRow = document.createElement('div');
+    metaRow.className = 'listing-meta-row';
+
+    const siteTag = document.createElement('span');
+    siteTag.className = 'site-tag';
+    siteTag.appendChild(faviconEl(r.site));
+    const siteName = document.createElement('span');
+    siteName.textContent = r.site;
+    siteTag.appendChild(siteName);
+    metaRow.appendChild(siteTag);
+
+    const isAccessory = ACCESSORY_CATEGORIES.has(r.category);
+    const badge = document.createElement('span');
+    badge.className = 'category-badge' + (isAccessory ? ' accessory' : '');
+    badge.textContent = r.category;
+    const tagColor = categoryColor(r.category);
+    badge.style.color = tagColor;
+    badge.style.borderColor = tagColor;
+    badge.style.background = withAlpha(tagColor, 0.14);
+    metaRow.appendChild(badge);
+
+    if (r.year){
+      const yearEl = document.createElement('span');
+      yearEl.className = 'year-badge';
+      yearEl.textContent = r.year;
+      metaRow.appendChild(yearEl);
+    }
+
+    if (!r.in_stock){
+      const oos = document.createElement('span');
+      oos.className = 'out-of-stock-flag';
+      oos.textContent = 'Out of stock';
+      metaRow.appendChild(oos);
+    }
+
+    // NEW in v1.9: flags a listing that's marked in stock but priced at
+    // exactly $0 - almost always a data issue on the shop's end (a
+    // "coming soon" placeholder variant, a not-yet-priced pre-order slot,
+    // etc.) rather than an actual free tea, and it's worth calling out
+    // since a $0 row would otherwise look like the best deal on the page
+    // (bottom of every price sort, 0th percentile, ...).
+    if (r.price_usd === 0 && r.in_stock){
+      const zeroFlag = document.createElement('span');
+      zeroFlag.className = 'zero-price-flag';
+      zeroFlag.textContent = '($0 Listing)';
+      zeroFlag.title = 'Priced at $0 but marked in stock - likely a placeholder/not-yet-priced variant on the shop\'s end, not an actual free listing';
+      metaRow.appendChild(zeroFlag);
+    }
+
+    main.appendChild(metaRow);
+
+    const titleLink = document.createElement('a');
+    titleLink.className = 'listing-title';
+    titleLink.href = r.product_url;
+    titleLink.target = '_blank';
+    titleLink.rel = 'noopener noreferrer';
+    titleLink.textContent = r.product_title;
+    main.appendChild(titleLink);
+
+    const sub = document.createElement('div');
+    sub.className = 'listing-sub';
+    const bits = [];
+    if (r.variant_title) bits.push(r.variant_title);
+    if (r.form_factor) bits.push(r.form_factor);
+    sub.textContent = bits.join(' · ');
+    main.appendChild(sub);
+
+    el.appendChild(main);
+
+    const priceCol = document.createElement('div');
+    priceCol.className = 'listing-price';
+
+    const primaryLine = document.createElement('div');
+    primaryLine.className = 'price-line';
+    const primaryVal = document.createElement('span');
+    primaryVal.className = 'price-per-gram';
+
+    const detailBits = [];
+    // CHANGED in v1.9: primaryPercentile (and therefore the only badge a
+    // listing can ever get) is now always the PRICE-PER-GRAM percentile
+    // rank - same scope the z-score badge it replaces used to have (see
+    // the big comment above buildPercentileTag() for why it's a
+    // percentile now, not a z-score). Teaware/Tools rows have no
+    // price-per-gram at all, so they simply never get a badge.
+    let primaryPercentile = null;   // percentile rank for whatever figure is the headline
+
+    if (r.price_per_gram !== null){
+      primaryVal.innerHTML = '$' + r.price_per_gram.toFixed(4) + '<small>/g</small>';
+      primaryPercentile = percentileRank(r.price_per_gram, pgSortedValues);
+      if (r.price_usd !== null){
+        // v1.7: total listing price, labeled explicitly rather than
+        // folded silently into a "$X for Yg" phrase.
+        detailBits.push('$' + r.price_usd.toFixed(2) + ' total');
+      }
+      if (r.weight_grams !== null) detailBits.push(r.weight_grams % 1 === 0 ? r.weight_grams + 'g' : r.weight_grams.toFixed(1) + 'g');
+    } else if (isAccessory && r.price_usd !== null){
+      // Teaware/Tools have no price-per-gram (it wouldn't mean anything),
+      // so the plain total price is the headline figure - and it doesn't
+      // get a percentile badge of its own either, since that's
+      // price-per-gram only.
+      primaryVal.textContent = '$' + r.price_usd.toFixed(2);
+    } else {
+      primaryVal.style.color = 'var(--ink-faint)';
+      primaryVal.style.fontSize = '13px';
+      primaryVal.textContent = '—';
+      if (r.price_usd !== null){
+        detailBits.push('$' + r.price_usd.toFixed(2) + ' total');
+      }
+    }
+    primaryLine.appendChild(primaryVal);
+    const primaryPercentileTag = buildPercentileTag(primaryPercentile);
+    if (primaryPercentileTag) primaryLine.appendChild(primaryPercentileTag);
+    priceCol.appendChild(primaryLine);
+
+    if (detailBits.length){
+      const detailLine = document.createElement('div');
+      detailLine.className = 'price-detail-line';
+      const detail = document.createElement('span');
+      detail.className = 'price-detail';
+      detail.textContent = detailBits.join(' · ');
+      detailLine.appendChild(detail);
+      priceCol.appendChild(detailLine);
+    }
+
+    el.appendChild(priceCol);
+
+    return el;
+  }
+
+  // -------------------------------------------------------------------
+  // File loading - CSV (existing) and Database (new in v1.8)
+  // -------------------------------------------------------------------
+  // Sets the "loaded file" label in the header, plus a matching `title`
+  // attribute so the full text is always available as a native tooltip
+  // on hover - a safety net for whenever the label text (e.g. the
+  // "tea_prices.db — showing 2026-09-09 (24280 listings)" message below)
+  // is too long to fit and gets ellipsis-truncated by the .file-name
+  // CSS rule.
+  function setFileNameLabel(text){
+    const el = document.getElementById('fileName');
+    el.textContent = text;
+    el.title = text;
+  }
+
+  document.getElementById('csvInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setFileNameLabel(file.name);
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      allRows = rowsFromCSVText(evt.target.result);
+      computeGlobalPgSortedValues(); // NEW in v2.2 - see its definition up top
+      // NEW in v1.8: loading a CSV always clears out whatever a
+      // previously-loaded .db left behind (dbRunDates/newListingUrls),
+      // so "See what's new" correctly goes back to disabled and there's
+      // no stale run-date data hanging around from the last file.
+      dataSource = 'csv';
+      dbRunDates = [];
+      dbCurrentRunDate = null;
+      dbPreviousRunDate = null;
+      newListingUrls = null;
+      state.showWhatsNew = false;
+      rebuildFilterOptions();
+      applyStockButtonUI();
+      applySortButtonUI();
+      applyWhatsNewButtonUI();
+      render();
+    };
+    reader.onerror = () => {
+      alert('Could not read that file. Make sure it\'s a .csv file written by the tracker script.');
+    };
+    reader.readAsText(file);
+  });
+
+  // sql.js needs its .wasm binary fetched separately from the same
+  // cdnjs folder as the sql-wasm.js <script> tag above - initSqlJs()
+  // handles that itself once told where to look via locateFile. Only
+  // called the first time someone actually clicks "Load Database", and
+  // cached afterward so repeated loads don't re-fetch the wasm binary.
+  let sqlJsPromise = null;
+  function loadSqlJs(){
+    if (!sqlJsPromise){
+      sqlJsPromise = initSqlJs({
+        locateFile: (file) => 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.1/' + file,
+      });
+    }
+    return sqlJsPromise;
+  }
+
+  // Turns a sql.js query result (the {columns, values} shape db.exec()
+  // returns) for "SELECT ... FROM listings" into the same row shape
+  // rowsFromCSVText() produces above, tagged with run_date so the
+  // most-recent-run and "what's new" logic below can work with them, and
+  // then narrows allRows down to just the most recent run_date - per the
+  // v1.8 spec, the dashboard should never show every run in the database
+  // at once, just the latest one (the database is expected to
+  // accumulate many weeks of duplicate-ish listings over time).
+  function loadRowsFromDbResult(result, displayName){
+    const columns = result.length ? result[0].columns : [];
+    const values = result.length ? result[0].values : [];
+    const col = (name) => columns.indexOf(name);
+    const iRunDate = col('run_date'), iSite = col('site'), iCategory = col('category'),
+          iTitle = col('product_title'), iVariant = col('variant_title'),
+          iForm = col('form_factor'), iPrice = col('price_usd'),
+          iGrams = col('weight_grams'), iPg = col('price_per_gram'),
+          iYear = col('year'), iStock = col('in_stock'), iUrl = col('product_url');
+
+    const dbRows = values.map(v => ({
+      run_date: v[iRunDate],
+      site: v[iSite] || 'Unknown',
+      category: v[iCategory] || 'Other',
+      product_title: v[iTitle] || '(untitled)',
+      variant_title: v[iVariant] || '',
+      form_factor: v[iForm] || '',
+      price_usd: v[iPrice] === null || v[iPrice] === undefined ? null : Number(v[iPrice]),
+      weight_grams: v[iGrams] === null || v[iGrams] === undefined ? null : Number(v[iGrams]),
+      price_per_gram: v[iPg] === null || v[iPg] === undefined ? null : Number(v[iPg]),
+      year: v[iYear] === null || v[iYear] === undefined ? null : Number(v[iYear]),
+      in_stock: !!v[iStock],
+      product_url: v[iUrl] || '#',
+    }));
+
+    // Newest-first: run_date is always 'YYYY-MM-DD', so a plain string
+    // sort already puts them in chronological order.
+    dbRunDates = [...new Set(dbRows.map(r => r.run_date))].sort().reverse();
+    dbCurrentRunDate = dbRunDates.length ? dbRunDates[0] : null;
+    dbPreviousRunDate = dbRunDates.length > 1 ? dbRunDates[1] : null;
+
+    // Only the most recent run_date's rows become allRows - see the
+    // function comment above. run_date itself is dropped since nothing
+    // downstream (rendering, filtering, sorting) uses it.
+    allRows = dbRows
+      .filter(r => r.run_date === dbCurrentRunDate)
+      .map(({ run_date, ...rest }) => rest);
+    computeGlobalPgSortedValues(); // NEW in v2.2 - see its definition up top
+
+    if (dbPreviousRunDate){
+      const previousUrls = new Set(
+        dbRows.filter(r => r.run_date === dbPreviousRunDate).map(r => r.product_url)
+      );
+      newListingUrls = new Set(
+        allRows.filter(r => !previousUrls.has(r.product_url)).map(r => r.product_url)
+      );
+    } else {
+      // Nothing to diff against yet - a brand-new database with only one
+      // run recorded so far. "See what's new" stays disabled until a
+      // second weekly run gets added.
+      newListingUrls = null;
+    }
+
+    dataSource = 'db';
+    state.showWhatsNew = false;
+
+    setFileNameLabel(dbCurrentRunDate
+      ? (displayName + ' — showing ' + dbCurrentRunDate + ' (' + allRows.length + ' listings)')
+      : (displayName + ' — no listings found'));
+
+    rebuildFilterOptions();
+    applyStockButtonUI();
+    applySortButtonUI();
+    applyWhatsNewButtonUI();
+    render();
+  }
+
+  document.getElementById('dbInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setFileNameLabel('Loading ' + file.name + '…');
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      loadSqlJs().then((SQL) => {
+        try {
+          const db = new SQL.Database(new Uint8Array(evt.target.result));
+          const result = db.exec(
+            'SELECT run_date, site, category, product_title, variant_title, form_factor, ' +
+            'price_usd, weight_grams, price_per_gram, year, in_stock, product_url FROM listings'
+          );
+          db.close();
+          loadRowsFromDbResult(result, file.name);
+        } catch (err){
+          setFileNameLabel('');
+          alert('Could not read that file. Make sure it\'s a tea_prices.db file written by tea_db.py.');
+        }
+      }).catch(() => {
+        setFileNameLabel('');
+        alert('Could not load the database engine. Check your internet connection (it loads from cdnjs.cloudflare.com the first time) and try again.');
+      });
+    };
+    reader.onerror = () => {
+      setFileNameLabel('');
+      alert('Could not read that file. Make sure it\'s a .db file written by tea_db.py.');
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  // =====================================================================
+  // NEW in v2.2: "Make me a cart" feature. Everything below reads from
+  // allRows (whatever's already loaded) using the modal's OWN
+  // parameters - entirely independent of the sidebar filters/state
+  // object used everywhere else in this file. Nothing here mutates
+  // allRows or any row object.
+  // =====================================================================
+
+  // A cart can only contain ONE variant of a given PRODUCT - never the
+  // same tea twice, even at a different size (confirmed in v2.2 spec
+  // discussion). This is the identity key used to tell "the same tea"
+  // apart from "a different tea".
+  function cartProductKey(row){ return row.site + '||' + row.product_url; }
+
+  // Groups eligible rows into one entry per distinct product, each
+  // holding all of that product's eligible size variants sorted
+  // CHEAPEST-TOTAL-PRICE-FIRST. That ordering is what lets
+  // pickAffordableVariant() below just scan from the front and stop at
+  // the first variant that fits a given budget - since it's ascending,
+  // the first fit found is always also the cheapest fit. A variant
+  // choice is only ever tracked by POINTER (variantIndex, kept on the
+  // CART ENTRY, never on the group itself), so the same group objects
+  // can safely be reused/shared across all three cart options without
+  // one option's picks affecting another's.
+  function buildCartProductGroups(rows){
+    const map = new Map();
+    for (const r of rows){
+      const key = cartProductKey(r);
+      if (!map.has(key)){
+        map.set(key, { key, site: r.site, category: r.category, product_title: r.product_title, product_url: r.product_url, variants: [] });
+      }
+      map.get(key).variants.push(r);
+    }
+    const groups = [...map.values()];
+    groups.forEach(g => g.variants.sort((a, b) => a.price_usd - b.price_usd));
+    return groups;
+  }
+
+  function cartGroupCheapestPpg(group){
+    return Math.min(...group.variants.map(v => v.price_per_gram));
+  }
+
+  // Returns the index of the cheapest variant in group.variants that
+  // fits within `budget`, or -1 if even the cheapest one doesn't.
+  // Variants are pre-sorted ascending by price_usd (see
+  // buildCartProductGroups), so the first fit found scanning
+  // front-to-back is guaranteed to be the cheapest that fits.
+  function pickAffordableVariant(group, budget){
+    for (let i = 0; i < group.variants.length; i++){
+      if (group.variants[i].price_usd <= budget) return i;
+    }
+    return -1;
+  }
+
+  function shuffleInPlace(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function medianOf(sortedValues){
+    const n = sortedValues.length;
+    if (n === 0) return null;
+    const mid = Math.floor(n / 2);
+    return n % 2 === 0 ? (sortedValues[mid - 1] + sortedValues[mid]) / 2 : sortedValues[mid];
+  }
+
+  // Splits `groups` into one bucket per selected type and interleaves
+  // them round-robin (bucket 1's first pick, bucket 2's first pick, ...,
+  // bucket 1's second pick, ...) so a cart built from the resulting
+  // order comes out roughly evenly split across the selected tea types -
+  // the "nice to have" even split from the v2.2 spec. `orderFn`
+  // sorts/shuffles each bucket's contents BEFORE interleaving, so this
+  // same helper works for all three cart options. Only used when 2+ tea
+  // types are selected (see callers) - with 0 or 1 types selected
+  // there's nothing to split evenly across.
+  function roundRobinByType(groups, types, orderFn){
+    const buckets = types.map(t => groups.filter(g => g.category === t));
+    buckets.forEach(orderFn);
+    const order = [];
+    const idxs = buckets.map(() => 0);
+    let more = true;
+    while (more){
+      more = false;
+      for (let i = 0; i < buckets.length; i++){
+        if (idxs[i] < buckets[i].length){
+          order.push(buckets[i][idxs[i]]);
+          idxs[i]++;
+          more = true;
+        }
+      }
+    }
+    return order;
+  }
+
+  // Filters allRows down to what's eligible for ANY cart option, per the
+  // modal's own parameters: always in-stock, never $0 (per the v2.2
+  // spec), tea rows only (accessories aren't "teas"), and must have a
+  // price-per-gram to be economically comparable at all.
+  function filterCartCandidates(params){
+    return allRows.filter(r => {
+      if (ACCESSORY_CATEGORIES.has(r.category)) return false;
+      if (!r.in_stock) return false;
+      if (r.price_usd === null || r.price_usd === 0) return false;
+      if (r.price_per_gram === null || Number.isNaN(r.price_per_gram)) return false;
+      if (params.teaTypes.length && !params.teaTypes.includes(r.category)) return false;
+      if (params.sites.length && !params.sites.includes(r.site)) return false;
+      if (params.formFactors.length && !params.formFactors.includes(r.form_factor)) return false;
+      if (params.gramsMin !== null && (r.weight_grams === null || r.weight_grams < params.gramsMin)) return false;
+      if (params.gramsMax !== null && (r.weight_grams === null || r.weight_grams > params.gramsMax)) return false;
+      if (params.yearFrom !== null && (r.year === null || r.year < params.yearFrom)) return false;
+      if (params.yearTo !== null && (r.year === null || r.year > params.yearTo)) return false;
+      return true;
+    });
+  }
+
+  // The shared "keep adding whatever fits until the budget's used up"
+  // walk. `orderedGroups` is already in the order this option wants to
+  // try products in (cheapest-first, shuffled, etc. - see each option's
+  // own function below). `maxCount`, when given, hard-stops the walk
+  // once that many distinct teas have been added - used by Option 1
+  // only. Options 2 & 3 stop purely on budget instead and reconcile the
+  // count range afterward (see reconcileByReplacement) - straight from
+  // how the v2.2 spec describes each option.
+  function fillCartByBudget(orderedGroups, budget, maxCount){
+    const cart = [];
+    const used = new Set();
+    let spent = 0;
+    for (const group of orderedGroups){
+      if (used.has(group.key)) continue;
+      if (maxCount !== null && cart.length >= maxCount) break;
+      const idx = pickAffordableVariant(group, budget - spent);
+      if (idx === -1) continue; // doesn't fit at any size - skip, keep walking
+      cart.push({ group, variantIndex: idx });
+      used.add(group.key);
+      spent += group.variants[idx].price_usd;
+    }
+    return { cart, spent };
+  }
+
+  // Option 1's reconciliation step: if still short of the requested
+  // minimum once the primary walk runs out of room, find the biggest
+  // available "downsize" (swap a cart item for a SMALLER/CHEAPER variant
+  // of that SAME tea) that frees up enough budget to afford one more
+  // distinct listing - repeating as needed. This is the "select less
+  // amount of a particular tea in order to add an additional listing"
+  // mechanism from the v2.2 spec.
+  function reconcileByDownsizing(cart, spent, budget, orderedGroups, countMin){
+    const used = new Set(cart.map(c => c.group.key));
+    let guard = 0;
+    while (cart.length < countMin && guard++ < 1000){
+      let addedOutright = false;
+      for (const group of orderedGroups){
+        if (used.has(group.key)) continue;
+        const idx = pickAffordableVariant(group, budget - spent);
+        if (idx !== -1){
+          cart.push({ group, variantIndex: idx });
+          used.add(group.key);
+          spent += group.variants[idx].price_usd;
+          addedOutright = true;
+          break;
+        }
+      }
+      if (addedOutright) continue;
+
+      let bestSaving = 0, bestCartIdx = -1, bestVariantIdx = -1;
+      cart.forEach((entry, cartIdx) => {
+        const { group, variantIndex } = entry;
+        for (let i = 0; i < variantIndex; i++){
+          const saving = group.variants[variantIndex].price_usd - group.variants[i].price_usd;
+          if (saving > bestSaving){
+            bestSaving = saving; bestCartIdx = cartIdx; bestVariantIdx = i;
+          }
+        }
+      });
+      if (bestCartIdx === -1) break; // no further downsize available - report the shortfall
+
+      const entry = cart[bestCartIdx];
+      spent -= (entry.group.variants[entry.variantIndex].price_usd - entry.group.variants[bestVariantIdx].price_usd);
+      entry.variantIndex = bestVariantIdx;
+    }
+    return { cart, spent };
+  }
+
+  // Options 2 & 3's reconciliation step, straight from the v2.2 spec: if
+  // short of the requested minimum, replace the most expensive cart item
+  // (by total $, not price/gram) with a randomly-selected CHEAPER,
+  // not-yet-included tea from the same pool this option drew from -
+  // freeing up enough room that, on the next pass, an additional
+  // distinct tea can often be added outright.
+  function reconcileByReplacement(cart, spent, budget, pool, countMin){
+    const used = new Set(cart.map(c => c.group.key));
+    let guard = 0;
+    while (cart.length < countMin && guard++ < 1000){
+      const addable = pool.find(g => !used.has(g.key) && pickAffordableVariant(g, budget - spent) !== -1);
+      if (addable){
+        const idx = pickAffordableVariant(addable, budget - spent);
+        cart.push({ group: addable, variantIndex: idx });
+        used.add(addable.key);
+        spent += addable.variants[idx].price_usd;
+        continue;
+      }
+      if (cart.length === 0) break;
+
+      let priciestIdx = 0;
+      cart.forEach((entry, i) => {
+        const price = entry.group.variants[entry.variantIndex].price_usd;
+        const bestPrice = cart[priciestIdx].group.variants[cart[priciestIdx].variantIndex].price_usd;
+        if (price > bestPrice) priciestIdx = i;
+      });
+      const priciest = cart[priciestIdx];
+      const priciestPrice = priciest.group.variants[priciest.variantIndex].price_usd;
+      const hypotheticalBudget = (budget - spent) + priciestPrice;
+
+      const candidates = pool.filter(g => !used.has(g.key) && g.key !== priciest.group.key);
+      shuffleInPlace(candidates);
+      let replacement = null, replacementIdx = -1;
+      for (const g of candidates){
+        const idx = pickAffordableVariant(g, hypotheticalBudget);
+        if (idx !== -1 && g.variants[idx].price_usd < priciestPrice){
+          replacement = g; replacementIdx = idx; break;
+        }
+      }
+      if (!replacement) break; // no viable cheaper swap left - report the shortfall
+
+      used.delete(priciest.group.key);
+      cart.splice(priciestIdx, 1);
+      spent -= priciestPrice;
+      cart.push({ group: replacement, variantIndex: replacementIdx });
+      used.add(replacement.key);
+      spent += replacement.variants[replacementIdx].price_usd;
+    }
+    return { cart, spent };
+  }
+
+  // Final polish step, shared by all three options: if the primary walk
+  // and reconciliation still leave meaningful budget unspent, spend it
+  // down by upsizing existing cart items to a larger available size of
+  // that SAME tea, one small step at a time, cheapest step first - "go
+  // up in weight if there is a little extra budget room" from the v2.2
+  // spec. Never adds a new distinct tea, only resizes ones already in
+  // the cart.
+  function upsizeLeftoverBudget(cart, spent, budget){
+    let guard = 0;
+    while (guard++ < 1000){
+      const leftover = budget - spent;
+      if (leftover <= 0.005) break;
+      let bestStep = Infinity, bestCartIdx = -1, bestVariantIdx = -1;
+      cart.forEach((entry, cartIdx) => {
+        const { group, variantIndex } = entry;
+        if (variantIndex + 1 < group.variants.length){
+          const step = group.variants[variantIndex + 1].price_usd - group.variants[variantIndex].price_usd;
+          if (step > 0 && step <= leftover && step < bestStep){
+            bestStep = step; bestCartIdx = cartIdx; bestVariantIdx = variantIndex + 1;
+          }
+        }
+      });
+      if (bestCartIdx === -1) break;
+      cart[bestCartIdx].variantIndex = bestVariantIdx;
+      spent += bestStep;
+    }
+    return spent;
+  }
+
+  function finalizeCartOption(label, cart, spent, params){
+    const items = cart.map(({ group, variantIndex }) => group.variants[variantIndex]);
+    const totalGrams = items.reduce((s, r) => s + (r.weight_grams || 0), 0);
+    let mismatch = null;
+    if (items.length < params.countMin){
+      mismatch = `Only ${items.length} tea${items.length === 1 ? '' : 's'} fit the budget and filters - couldn't reach the requested minimum of ${params.countMin}.`;
+    } else if (params.countMax !== null && items.length > params.countMax){
+      mismatch = `${items.length} teas fit within budget before it ran out - more than the requested maximum of ${params.countMax}.`;
+    }
+    return { label, items, totalCost: spent, totalGrams, mismatch };
+  }
+
+  function generateOption1(groups, params){
+    const orderFn = arr => arr.sort((a, b) => cartGroupCheapestPpg(a) - cartGroupCheapestPpg(b));
+    const ordered = params.teaTypes.length >= 2
+      ? roundRobinByType(groups, params.teaTypes, orderFn)
+      : orderFn([...groups]);
+    let { cart, spent } = fillCartByBudget(ordered, params.budget, params.countMax);
+    ({ cart, spent } = reconcileByDownsizing(cart, spent, params.budget, ordered, params.countMin));
+    spent = upsizeLeftoverBudget(cart, spent, params.budget);
+    return finalizeCartOption('Option 1 — Cheap Prices', cart, spent, params);
+  }
+
+  function generateOption2(groups, params){
+    const orderFn = arr => shuffleInPlace(arr);
+    const ordered = params.teaTypes.length >= 2
+      ? roundRobinByType(groups, params.teaTypes, orderFn)
+      : orderFn([...groups]);
+    let { cart, spent } = fillCartByBudget(ordered, params.budget, null);
+    ({ cart, spent } = reconcileByReplacement(cart, spent, params.budget, groups, params.countMin));
+    spent = upsizeLeftoverBudget(cart, spent, params.budget);
+    return finalizeCartOption('Option 2 — A Mixed Bag', cart, spent, params);
+  }
+
+  function generateOption3(groups, candidateRows, params){
+    // "Above the 50th percentile" is judged against the price-per-gram
+    // of THIS generation's own eligible candidate pool (post every other
+    // filter) - not the whole-dataset percentile the badges on the main
+    // listings use (see CHANGES IN v2.2, item 2) - since "something
+    // special" should mean pricier than what's actually on offer here,
+    // not pricier than the entire catalog regardless of what got
+    // filtered out.
+    const ppgValues = candidateRows.map(r => r.price_per_gram).sort((a, b) => a - b);
+    const median = medianOf(ppgValues);
+    const premiumGroups = median === null ? [] : groups
+      .map(g => ({ ...g, variants: g.variants.filter(v => v.price_per_gram >= median) }))
+      .filter(g => g.variants.length > 0);
+
+    const orderFn = arr => shuffleInPlace(arr);
+    const ordered = params.teaTypes.length >= 2
+      ? roundRobinByType(premiumGroups, params.teaTypes, orderFn)
+      : orderFn([...premiumGroups]);
+    let { cart, spent } = fillCartByBudget(ordered, params.budget, null);
+    ({ cart, spent } = reconcileByReplacement(cart, spent, params.budget, premiumGroups, params.countMin));
+    spent = upsizeLeftoverBudget(cart, spent, params.budget);
+    return finalizeCartOption('Option 3 — Something Special', cart, spent, params);
+  }
+
+  // ---- Modal UI: checkbox multi-selects ----
+  const cartSelection = { teaTypes: [], sites: [], formFactors: [] };
+
+  function cartCheckboxOption(box, value, label, selectionArr){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cart-checkbox-option';
+    const checked = selectionArr.includes(value);
+    const checkbox = document.createElement('span');
+    checkbox.className = 'type-checkbox' + (checked ? ' checked' : '');
+    checkbox.textContent = checked ? '✓' : '';
+    btn.appendChild(checkbox);
+    const span = document.createElement('span');
+    span.textContent = label;
+    btn.appendChild(span);
+    btn.addEventListener('click', () => {
+      const idx = selectionArr.indexOf(value);
+      if (idx === -1) selectionArr.push(value); else selectionArr.splice(idx, 1);
+      checkbox.classList.toggle('checked');
+      checkbox.textContent = checkbox.classList.contains('checked') ? '✓' : '';
+    });
+    box.appendChild(btn);
+  }
+
+  // Rebuilds the three checkbox boxes from whatever's currently in
+  // allRows, every time the modal is opened - so a newly-loaded file's
+  // sites/types/form-factors show up automatically, same philosophy as
+  // rebuildFilterOptions() for the main sidebar. Previously-checked
+  // values that no longer exist in the new data are dropped.
+  function populateCartCheckboxBoxes(){
+    const teaRows = allRows.filter(r => !ACCESSORY_CATEGORIES.has(r.category));
+    const types = [...new Set(teaRows.map(r => r.category))].sort();
+    const sites = [...new Set(teaRows.map(r => r.site))].sort();
+    const formFactors = [...new Set(teaRows.map(r => r.form_factor).filter(Boolean))].sort();
+
+    cartSelection.teaTypes = cartSelection.teaTypes.filter(t => types.includes(t));
+    cartSelection.sites = cartSelection.sites.filter(s => sites.includes(s));
+    cartSelection.formFactors = cartSelection.formFactors.filter(f => formFactors.includes(f));
+
+    const typeBox = document.getElementById('cartTypeBox');
+    const siteBox = document.getElementById('cartSiteBox');
+    const formBox = document.getElementById('cartFormFactorBox');
+    typeBox.innerHTML = ''; siteBox.innerHTML = ''; formBox.innerHTML = '';
+
+    if (types.length === 0) typeBox.innerHTML = '<div class="cart-empty-note">No tea data loaded yet.</div>';
+    else types.forEach(t => cartCheckboxOption(typeBox, t, t, cartSelection.teaTypes));
+
+    if (sites.length === 0) siteBox.innerHTML = '<div class="cart-empty-note">No tea data loaded yet.</div>';
+    else sites.forEach(s => cartCheckboxOption(siteBox, s, s, cartSelection.sites));
+
+    if (formFactors.length === 0) formBox.innerHTML = '<div class="cart-empty-note">No tea data loaded yet.</div>';
+    else formFactors.forEach(f => cartCheckboxOption(formBox, f, f, cartSelection.formFactors));
+  }
+
+  // ---- Modal UI: reading + validating params ----
+  function cartFieldNumOrNull(id){
+    const v = document.getElementById(id).value;
+    return v === '' ? null : Number(v);
+  }
+
+  function readCartParams(){
+    return {
+      teaTypes: [...cartSelection.teaTypes],
+      sites: [...cartSelection.sites],
+      formFactors: [...cartSelection.formFactors],
+      budget: cartFieldNumOrNull('cartBudgetInput'),
+      gramsMin: cartFieldNumOrNull('cartGramsMinInput'),
+      gramsMax: cartFieldNumOrNull('cartGramsMaxInput'),
+      yearFrom: cartFieldNumOrNull('cartYearFromInput'),
+      yearTo: cartFieldNumOrNull('cartYearToInput'),
+      countMin: cartFieldNumOrNull('cartCountMinInput'),
+      countMax: cartFieldNumOrNull('cartCountMaxInput'),
+    };
+  }
+
+  function validateCartParams(p){
+    if (allRows.length === 0) return 'Load a CSV or Database file first.';
+    if (p.budget === null || p.budget <= 0) return 'Enter a total budget greater than $0.';
+    if (p.countMin === null && p.countMax === null) return 'Enter at least a minimum or maximum for number of teas.';
+    if (p.countMin !== null && p.countMax !== null && p.countMin > p.countMax) return "Minimum number of teas can't be greater than the maximum.";
+    if (p.gramsMin !== null && p.gramsMax !== null && p.gramsMin > p.gramsMax) return "Minimum grams can't be greater than maximum grams.";
+    if (p.yearFrom !== null && p.yearTo !== null && p.yearFrom > p.yearTo) return "From-year can't be after to-year.";
+    return null;
+  }
+
+  function showCartError(msg){
+    const el = document.getElementById('cartErrorMsg');
+    if (!msg){ el.hidden = true; el.textContent = ''; return; }
+    el.hidden = false;
+    el.textContent = msg;
+  }
+
+  // ---- Modal UI: rendering results ----
+  function renderCartItem(r){
+    const el = document.createElement('div');
+    el.className = 'cart-item';
+    el.appendChild(faviconEl(r.site));
+
+    const main = document.createElement('div');
+    main.className = 'cart-item-main';
+
+    const link = document.createElement('a');
+    link.className = 'cart-item-title';
+    link.href = r.product_url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = r.product_title;
+    main.appendChild(link);
+
+    const subBits = [r.site];
+    if (r.variant_title) subBits.push(r.variant_title);
+    if (r.form_factor) subBits.push(r.form_factor);
+    const sub = document.createElement('div');
+    sub.className = 'cart-item-sub';
+    sub.textContent = subBits.join(' · ');
+    main.appendChild(sub);
+
+    const weightText = r.weight_grams !== null
+      ? (r.weight_grams % 1 === 0 ? r.weight_grams + 'g' : r.weight_grams.toFixed(1) + 'g')
+      : '';
+    const price = document.createElement('div');
+    price.className = 'cart-item-price';
+    const priceBits = ['<b>$' + r.price_usd.toFixed(2) + '</b>'];
+    if (weightText) priceBits.push(weightText);
+    if (r.price_per_gram !== null) priceBits.push('$' + r.price_per_gram.toFixed(4) + '/g');
+    price.innerHTML = priceBits.join(' · ');
+    main.appendChild(price);
+
+    el.appendChild(main);
+    return el;
+  }
+
+  function renderCartOptionCard(opt){
+    const card = document.createElement('div');
+    card.className = 'cart-option-card';
+
+    const title = document.createElement('h4');
+    title.className = 'cart-option-title';
+    title.textContent = opt.label;
+    card.appendChild(title);
+
+    const gramsText = opt.totalGrams % 1 === 0 ? opt.totalGrams + 'g' : opt.totalGrams.toFixed(1) + 'g';
+    const summary = document.createElement('div');
+    summary.className = 'cart-option-summary';
+    summary.textContent = `$${opt.totalCost.toFixed(2)} · ${gramsText} · ${opt.items.length} tea${opt.items.length === 1 ? '' : 's'}`;
+    card.appendChild(summary);
+
+    if (opt.mismatch){
+      const mismatch = document.createElement('div');
+      mismatch.className = 'cart-option-mismatch';
+      mismatch.textContent = opt.mismatch;
+      card.appendChild(mismatch);
+    }
+
+    if (opt.items.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'cart-option-empty';
+      empty.textContent = 'No teas fit these parameters.';
+      card.appendChild(empty);
+    } else {
+      opt.items.forEach(r => card.appendChild(renderCartItem(r)));
+    }
+
+    return card;
+  }
+
+  function renderCartResults(options){
+    const wrap = document.getElementById('cartResults');
+    wrap.innerHTML = '';
+    wrap.hidden = false;
+
+    const header = document.createElement('div');
+    header.className = 'cart-results-header';
+    const h3 = document.createElement('h3');
+    h3.textContent = 'Cart options';
+    header.appendChild(h3);
+    wrap.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'cart-options-grid';
+    options.forEach(opt => grid.appendChild(renderCartOptionCard(opt)));
+    wrap.appendChild(grid);
+  }
+
+  // ---- Modal UI: open/close + Generate/Reroll wiring ----
+  let cartLastGroups = null;         // cached across a "reroll 2 & 3" so option 1 doesn't get recomputed
+  let cartLastCandidateRows = null;
+  let cartLastParams = null;
+  let cartOption1Result = null;
+
+  const cartModalOverlay = document.getElementById('cartModalOverlay');
+  document.getElementById('makeCartBtn').addEventListener('click', () => {
+    populateCartCheckboxBoxes();
+    cartModalOverlay.hidden = false;
+  });
+  document.getElementById('cartModalCloseBtn').addEventListener('click', () => { cartModalOverlay.hidden = true; });
+  cartModalOverlay.addEventListener('click', (e) => { if (e.target === cartModalOverlay) cartModalOverlay.hidden = true; });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !cartModalOverlay.hidden) cartModalOverlay.hidden = true; });
+
+  document.getElementById('cartGenerateBtn').addEventListener('click', () => {
+    const rawParams = readCartParams();
+    const err = validateCartParams(rawParams);
+    if (err){ showCartError(err); return; }
+    showCartError(null);
+
+    // Blank min defaults to 1 (a cart needs at least one tea); blank max
+    // stays null/uncapped - see CHANGES IN v2.2 for how each option
+    // treats that cap differently.
+    const params = { ...rawParams, countMin: rawParams.countMin === null ? 1 : rawParams.countMin };
+
+    const candidateRows = filterCartCandidates(params);
+    const groups = buildCartProductGroups(candidateRows);
+
+    if (groups.length === 0){
+      const empty = (label) => ({ label, items: [], totalCost: 0, totalGrams: 0, mismatch: null });
+      renderCartResults([empty('Option 1 — Cheap Prices'), empty('Option 2 — A Mixed Bag'), empty('Option 3 — Something Special')]);
+      document.getElementById('cartRerollBtn').hidden = true;
+      cartLastGroups = null;
+      return;
+    }
+
+    cartLastGroups = groups;
+    cartLastCandidateRows = candidateRows;
+    cartLastParams = params;
+
+    cartOption1Result = generateOption1(groups, params);
+    const opt2 = generateOption2(groups, params);
+    const opt3 = generateOption3(groups, candidateRows, params);
+
+    renderCartResults([cartOption1Result, opt2, opt3]);
+    document.getElementById('cartRerollBtn').hidden = false;
+  });
+
+  document.getElementById('cartRerollBtn').addEventListener('click', () => {
+    if (!cartLastGroups || !cartOption1Result) return;
+    const opt2 = generateOption2(cartLastGroups, cartLastParams);
+    const opt3 = generateOption3(cartLastGroups, cartLastCandidateRows, cartLastParams);
+    renderCartResults([cartOption1Result, opt2, opt3]);
+  });
+
+  applyStockButtonUI();
+  applySortButtonUI();
+  applyVisualizeButtonUI();
+  applyWhatsNewButtonUI();
+  setDataset('tea');
+
+
+})();
+</script>
+
+</body>
+</html>
