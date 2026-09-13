@@ -1,0 +1,17 @@
+# NEVER commit this - it contains a live Gmail app password.
+# (Kept here defensively even in the dashboard repo, in case the
+# tracker and dashboard ever end up sharing one folder/repo.)
+config.py
+
+# Local run artifacts from tea_price_tracker.py - regenerated every run,
+# no reason to version-control them.
+output/
+tea_tracker.log
+
+# Python housekeeping
+__pycache__/
+*.pyc
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db
