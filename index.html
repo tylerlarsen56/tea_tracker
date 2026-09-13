@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tea Price Tracker — Dashboard</title>
+<!-- NEW in v2.4: fun logo instead of the default gray-globe favicon.
+     Embedded as a base64 data URI (rather than a separate .png sitting
+     next to this file) so this stays a single self-contained document -
+     same reasoning as parseCSV()'s comment below about not depending on
+     an external file - and so it works immediately after replacing this
+     file in the git repo, with no second asset to remember to copy over. -->
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAALS0lEQVR4nI1Xe5SV1XXf53yPe+8MIJVCKKUuo6mmGamhahttK2WFKC0W0XivhvKQQGYWDwUBRUvr5dMYExQbS0OCVVMVjdwJlYREs3TJI9V2seQpDESEQWxg5Dlz7/1e5+zH6R9hDCYxzV7r/HMe+/c7e5/H/in4LeacUwCglVIMALBp0yZ/8NARl2VJcjkxXWgsDhZQ56G172SZPazDwkEef+3uytn5tVrNK5fLopRyH4ehPm6gVqt5lUqFAQB2799/qWNvGqKdiBYv9TwdIBEMGHge9BztOWBMvonEdbA4ssT7hWVDgumzc6ZW3gEAKNdqXudZX78TgU2bNvljx46ln+7YMfT80uBlxDyzUAwLcTOGNInBosVCoRhkab4yTpJudu46RBmtlBpOLKA9H+I4Noj8VCNpPLB0wVeOV6tVP4oi+n8J9IPv2tN9fVDwngiC4ILTp08BoSUi1kToSqWS12g0VidZ/mpLqXVdo9FcjYi3iIPzLZKyFoGYISyUIE2zn6dZOvv+xe0/Ojeq/aY/Cu78sWPH0va93e1hqfATIrrg5MkTRIiOWXwiVACgG/XGaWvNWhD5frNRX4OEWx3A+cwMaO17zHTcOXB9fX2IiCM9HWz4x6+uXFCpVLharfq/kYBzzhs7VtG2PYdmDRw4aHWSxBLHsYiIz8yKCIGYndbaGWu6rKXrmXidWF5ijbkmDAvKAShxvNBaajjnlGP2siyTNEs4CIv/snDpowujKKJzSej+A6eU4rf2HP6bQrH0RKPex8YYJSKakAAJgYiAEBlAaSZqESfr6md6phvBW1paWmelScpZmt6exukRP/A/lSYJI5EWZo0WddKIyfPDFXMWf/XGKIqoXC57AADKOaeWAahJ7/UNkqyxR4MaGcd1cSKayQIRAqJ1hMSFQsFPs/QgIt6WNZqpeN4SrYNUOXj9RM+JLUppkcB7y/P8i+I4BmvREbMQOc8iiQNQaOmM9oLLhrYmJwAA9ObNm71IKbH1vmWtLQNHxnGTnDhNZ3eNiAAOVKlU8rMsPZQ1Tv9V5aYbtjvPvzAAXZ0++aY5hw7sesVvCdpVqHcx04BGo95tLdaV0sr3Cx4zAzNpkxvWnj8kaTS/EUWR7NvXphQAwLa9Ry8QwQNENrAmV8KkiCwgWqcBHBPWRWT2xAlfWLtu3bphvVlWmjVlyhEAgMcff2Kk+P5UT+szluym5qmj7wMAjRgxQh05lrYZxNuReIZFHIjIQMROxDkyctn3nnn4ZwoA4M2dh5YNGjSoevrEB8RMPhESoQVhFN/zwnpcH79/17bX2/70yrUkfNIm9mljend2dHTgr15j55y6557lA1RBLWB24zNjcmb5jHMw3Fh0RMTaK/hpEq9Yt+axxapWc94nLnp3Rxj4o5JG3RGTLhZCEGbwfQ0fHDu6tXLzhM+tqb10azEIl5zp6/1y+4wpu2q1mtfT09NqJfhL59Qoa8ki88Zo6YK3q9VqmHPp0pxkIlq+R2tvULPZZGbxEElEaZ2b/ECRPhilXt/6bptytFMYA0QjWoG2Wf4IM+0HJ20Wskd7jw4/3dFx5a/tdsWKb18Oof6TPLNaWC4hcddlef5uSWcz+1+9qXPvHRI47z8c6BvSJGES8ZAYkJgZ7V/4QPbP/GIYxHmChUIhiOt9G24cf+2S7/3ny1/40s1/991+sG8/9dRnCkHrAjRmqDHmBxrs9+fNm70bAHafw2nZovseWnMG4YcAMOGOOx4PV66cfxoA/v622xduUdq71lrDhKwAtCdEo30CudgTASKSYlgAYrfzhRfW/0EQtBwGAHj22donDePUMCxEeZ5tS00+r6D5QJYZXvbQI3dp7d0h4oZYyzvT1C5e8fDSKbPnL93bPm9pZeXK+Wv/4csLP+9AYWaTsnPB/wpxIMTslGgSvEijxd8nImAileUZENqrJk+edCxpnPniM8+vH5ezvXvYsOFRkjRf7Zg59aq75nVsnTNnTu+iRYsyT1yXAnjRGNtrTT5EUanLOafQ4tNEdAsAgDAcRbSvM0HZZPk6pTyFRIJIQBaHqfWvbv1WsVic02z0sjBrYUKy5k5Eu0prpRHNSbL2zAeB+2zpeO/FQak4zeR2mLGmxyIdJ6JrgrA4KW4m2/91xQPXAIC6vX3RNBY3+bknH7seAGDire3f8rxwTpImO8Wp0dYiOad8zOOnfSI+TUSARMCICpyEyPwd0CrJs/T+IAwprsc/aBG5Kmhp+alWCjxPQSEMQSsP0PPBGgQhehDAKQDliGiUiBwFAFWtVtW2PT//sQjOFoHRaA0QiXKggFhOaWY+ZK0FQlLMDMYYQLTiWFrZuUn7dr//1N13zzuifN0KAPv6+nqbzTi29XrD5nkOWZrFadKc8W+Pf+2V9vYOHwCAmG4VxzUAcFEUiZA7YYxRaI0QMRAxICII4SH1wvrNo5nxLSb0CC0wITAhoDUuDAOVpnGfzc2zRHYHEn0WnJsJAAMtEiDxS1me/fOqby7vqlarYRRFdvL0eauR6crONd+5YvxNs0YWncmaAhc4hh3GWEfEQMyKkIXIfs737YmuTAYc8rW+hAiFiTQTgYiouNkU52RwoVC8U3segDIgzJCmyVtIsvSx5Q++BgBQrVZ1FEV26sw7HyGiqWCoDQBAxNybAhy0Wf62HxSBEIWYFYtSRNRt+uBtXalULCNt0J4HiCREBB82Zm2McfVGH8ZxE/Msd2mSRN3v7rv6seUPvlYuV0MAgF273hs0bdadPxSRuXmWXd3Z+eThMdOnF53INCL6QyfuurP+HBKLiANi/tHBgz8xPgCAI/tks0ELzv7/jpkUn0NExGknDhDt5OUPRy8651Slsizs7IzsbdNmtZXC1pcs0fCkr3HF+vXP7a9Wq/q/tx2Y5AWFgVkaX0TMVzESEJHHxI4YhcQ+CQCga7Wa1zHjlp/lWfJ8GBY0EvJHokAkWmkvz/K5yx+OXly9enVQqVR0Z2dkp8zouLwYljYi44VpWv/r9euf218u31WKokiIabrJc0eENzLzH6G1QETsQGlCWzu0e1NXuVz2dFdXl6tWqxpyuLfZbJ5RSmnqTwUie57nJUn82qPLH1jd3t4eHDt2jGu1mkyfPn8wOFintR6Wpsn9L9XW7J4w6Ut/3sh6qgAATHSFtUYRsyZER0TCzNqYvOHELgEA1dnZ6XQURdLW1qYWLpzak2fpTAClSVgQ0SGyQkQQ5x5xzqlx48bJ5s2glVKOXTY/CIKL+xp9dQb1fLVa1Rb5ZhaZe824iSOI2ENC+GUqWUScZqL27n1vvg/lsgYA0QAA/dXq/Uvmrm/UG0vCIPSJmJ1jlabJqTzW/6OUcl1dXW7Llojb29sDYpycG+MY8WRf0Z38RdhRac8fAChVQjrFxEyESExOHPgmN0vf2/9fa2HMGB86O/kjVXF/tfpQdeHyZr3vPu15vtJaMcvBVauiGH6pIdzJJPkEM400ea6IeKhfr7eWy2UPLT2fxM1EeX67gLuEmT3ndMgsCjFffOSdN74GY8b4sGXLhwLlI7ogiiKq1WreNx5a+vUsTitEVCfEIWdxP5znW88hkbbWOKXUeSqHr3R2dvIbGze8nWfJtcbk/24tbrbWvoJovmmRrz68780VUC5754IDfIw065dRM2fO+ZQKgnmhxn9atWrVh1EYM2aMN/D3hu11Tv1xbi0Ki0Ir9wG5777xxo97f5NPgLIH0Plr+vBjxWm5XPY6z+bp7Esn5/b/7YSbpinPfybPDTA7EFCQJskJJnnZkrwsgb9x1IXn93V3d+vt229ggF+s/50J9AMDAPSD/8o6N+bzEyIA9WmL9gwh72eWvVaprr1bNx7/bX7Ptf8Da5mC24zreU4AAAAASUVORK5CYII=">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -985,11 +992,29 @@
     padding:16px;
     min-width:0;
   }
+  .cart-option-title-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:3px;
+  }
   .cart-option-title{
     font-family:var(--font-display);
     font-size:15.5px;
-    margin:0 0 3px;
+    margin:0;
   }
+  .cart-option-site{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-size:11px;
+    color:var(--ink-dim);
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .cart-option-site .favicon,
+  .cart-option-site .favicon-fallback{ width:14px; height:14px; }
   .cart-option-summary{
     font-size:12px;
     color:var(--ink-dim);
@@ -1036,6 +1061,31 @@
     color:var(--ink-dim);
   }
   .cart-item-price b{ color:var(--amber); font-weight:600; }
+
+  .cart-checkout-row{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--line-soft);
+  }
+  .cart-checkout-btn{
+    width:100%;
+    background:var(--amber);
+    color:var(--amber-ink);
+    border:none;
+    padding:9px 12px;
+    font-size:12.5px;
+    font-weight:600;
+    font-family:inherit;
+    border-radius:3px;
+    cursor:pointer;
+  }
+  .cart-checkout-btn:hover{ filter:brightness(1.08); }
+  .cart-checkout-btn:disabled{
+    background:transparent;
+    color:var(--ink-faint);
+    border:1px solid var(--line);
+    cursor:not-allowed;
+  }
 </style>
 </head>
 <body>
@@ -1154,8 +1204,14 @@
 
       <div class="filter-group">
         <span class="field-label">Availability</span>
-        <button type="button" class="toggle-btn state-any" id="stockToggle">
-          <span id="stockToggleLabel">Any availability</span>
+        <!-- NEW in v2.4: defaults to "In stock only" (was "Any
+             availability") - see state.stock below and the matching
+             change to the reset handler. This initial markup is
+             overwritten within a moment by applyStockButtonUI() at
+             script load anyway, but is kept in sync here too so there's
+             no flash of the old default before that runs. -->
+        <button type="button" class="toggle-btn state-in" id="stockToggle">
+          <span id="stockToggleLabel">In stock only</span>
           <span class="dot"></span>
         </button>
       </div>
@@ -1223,7 +1279,7 @@
     <div class="cart-modal-header">
       <div>
         <h2 id="cartModalTitle">Make me a cart</h2>
-        <p>Set your parameters, then generate three different ways to spend the same budget. These are shopping lists to reference, not an actual checkout - nothing here is added to any site's real cart.</p>
+        <p>Set your parameters, then generate three different single-website cart options for the same budget. Each option draws from just one site - click "Check Out" on any of them to open that site with the same items already added to your real cart there.</p>
       </div>
       <button type="button" class="cart-modal-close" id="cartModalCloseBtn" aria-label="Close">&times;</button>
     </div>
@@ -1238,7 +1294,7 @@
       <div class="cart-field">
         <span class="field-label">Websites</span>
         <div class="cart-checkbox-box" id="cartSiteBox"></div>
-        <div class="cart-hint">Leave all unchecked for no restriction.</div>
+        <div class="cart-hint">Leave unchecked to let each cart option pick a site automatically. Since each cart is now single-website, checking 2+ just widens which sites are eligible - it won't mix them into one cart.</div>
       </div>
 
       <div class="cart-field">
@@ -1378,7 +1434,7 @@
     yearMode: 'single',  // NEW v1.5: 'single' (yearSelect dropdown) | 'range' (yearFrom/yearTo)
     yearFrom: null,      // NEW v1.5: inclusive lower bound, or null if not set
     yearTo: null,        // NEW v1.5: inclusive upper bound, or null if not set
-    stock: 'any',       // 'any' | 'in' | 'out'
+    stock: 'in',        // 'any' | 'in' | 'out' - NEW in v2.4: defaults to "in" (was "any")
     sortField: 'price',  // 'price' | 'grams' (tea dataset only - accessories always sort by price_usd)
     sortDir: 'asc',       // 'asc' | 'desc'
     showAll: false,      // NEW v1.5: false = top 10 only, true = every matching listing
@@ -1646,6 +1702,15 @@
         year: intOrNull(obj.year),
         in_stock: String(obj.in_stock).toLowerCase() === 'true',
         product_url: obj.product_url || '#',
+        // NEW in v2.4: Shopify's numeric variant id, used to build the
+        // "Check Out" cart permalink. Kept as a STRING, not run through
+        // numOrNull()/Number() - it's only ever concatenated into a URL,
+        // never done arithmetic on, and staying a string sidesteps any
+        // float precision concerns for a 14+ digit id. null (not '') for
+        // an older CSV written before this column existed, or any blank
+        // cell, so downstream code can cleanly tell "no id" apart from
+        // "id happens to be an empty string".
+        variant_id: obj.variant_id ? String(obj.variant_id).trim() : null,
       });
     }
     return out;
@@ -2131,7 +2196,7 @@
   // -------------------------------------------------------------------
   document.getElementById('yearSelect').addEventListener('change', (e) => { state.year = e.target.value; render(); });
   document.getElementById('resetBtn').addEventListener('click', () => {
-    state.sites = []; state.types = []; state.year = 'all'; state.stock = 'any';
+    state.sites = []; state.types = []; state.year = 'all'; state.stock = 'in';
     state.sortField = 'price'; state.sortDir = 'asc';
     state.yearMode = 'single'; state.yearFrom = null; state.yearTo = null;
     state.showAll = false;
@@ -2715,7 +2780,8 @@
           iTitle = col('product_title'), iVariant = col('variant_title'),
           iForm = col('form_factor'), iPrice = col('price_usd'),
           iGrams = col('weight_grams'), iPg = col('price_per_gram'),
-          iYear = col('year'), iStock = col('in_stock'), iUrl = col('product_url');
+          iYear = col('year'), iStock = col('in_stock'), iUrl = col('product_url'),
+          iVariantId = col('variant_id');
 
     const dbRows = values.map(v => ({
       run_date: v[iRunDate],
@@ -2730,6 +2796,13 @@
       year: v[iYear] === null || v[iYear] === undefined ? null : Number(v[iYear]),
       in_stock: !!v[iStock],
       product_url: v[iUrl] || '#',
+      // NEW in v2.4 - see the matching comment in rowsFromCSVText() above
+      // for why this stays a string. iVariantId is -1 (col() not found)
+      // for a database written before this column existed, in which
+      // case v[-1] is undefined - handled the same as a genuinely NULL
+      // cell.
+      variant_id: (iVariantId === -1 || v[iVariantId] === null || v[iVariantId] === undefined)
+        ? null : String(v[iVariantId]),
     }));
 
     // Newest-first: run_date is always 'YYYY-MM-DD', so a plain string
@@ -2788,10 +2861,24 @@
       .catch(() => { throw new Error('SQLJS_LOAD_FAILED'); })
       .then((SQL) => {
         const db = new SQL.Database(bytes);
-        const result = db.exec(
-          'SELECT run_date, site, category, product_title, variant_title, form_factor, ' +
-          'price_usd, weight_grams, price_per_gram, year, in_stock, product_url FROM listings'
-        );
+        // NEW in v2.4: also select variant_id (used for the "Check Out"
+        // cart permalink). A database written before this column existed
+        // won't have it - `SELECT variant_id` against a missing column
+        // throws, so fall back to the old column list for exactly that
+        // case rather than failing to load the whole database over one
+        // missing (and, for that file, unavoidably absent) column.
+        let result;
+        try {
+          result = db.exec(
+            'SELECT run_date, site, category, product_title, variant_title, form_factor, ' +
+            'price_usd, weight_grams, price_per_gram, year, in_stock, product_url, variant_id FROM listings'
+          );
+        } catch (e){
+          result = db.exec(
+            'SELECT run_date, site, category, product_title, variant_title, form_factor, ' +
+            'price_usd, weight_grams, price_per_gram, year, in_stock, product_url FROM listings'
+          );
+        }
         db.close();
         loadRowsFromDbResult(result, displayName);
       });
@@ -2969,6 +3056,47 @@
     });
   }
 
+  // NEW in v2.4: a cart can no longer mix teas from different websites -
+  // each generated cart option now draws from exactly ONE site (needed
+  // for "Check Out" to make sense at all: a single Shopify cart
+  // permalink only ever belongs to one store). Splits the eligible
+  // groups (already filtered by any "Websites" restriction the person
+  // set in the modal) into one bucket per site, so each option below can
+  // pick a single site's bucket to build its cart from.
+  function groupsBySite(groups){
+    const map = new Map();
+    for (const g of groups){
+      if (!map.has(g.site)) map.set(g.site, []);
+      map.get(g.site).push(g);
+    }
+    return map;
+  }
+
+  // Option 1 ("Cheap Prices") picks whichever single site currently has
+  // the overall cheapest price-per-gram tea among the eligible
+  // candidates - deterministic (not random, unlike Options 2 & 3 below),
+  // since the whole point of this option is "wherever the best deal
+  // actually is", not a random site that happens to also be cheap.
+  function pickCheapestSite(perSite){
+    let bestSite = null, bestPpg = Infinity;
+    for (const [site, siteGroups] of perSite){
+      const ppg = Math.min(...siteGroups.map(cartGroupCheapestPpg));
+      if (ppg < bestPpg){ bestPpg = ppg; bestSite = site; }
+    }
+    return bestSite;
+  }
+
+  // Options 2 & 3 pick a uniformly random eligible site instead - each
+  // Generate (and each Reroll, since these two are the ones the reroll
+  // button regenerates) can land on a different single-website cart,
+  // which keeps the "surprise me" flavor those two options have always
+  // had, just scoped to one site at a time now.
+  function pickRandomSite(perSite){
+    const sites = [...perSite.keys()];
+    return sites[Math.floor(Math.random() * sites.length)];
+  }
+
+
   // The shared "keep adding whatever fits until the budget's used up"
   // walk. `orderedGroups` is already in the order this option wants to
   // try products in (cheapest-first, shuffled, etc. - see each option's
@@ -3117,51 +3245,57 @@
     return spent;
   }
 
-  function finalizeCartOption(label, cart, spent, params){
+  function finalizeCartOption(label, site, cart, spent, params){
     const items = cart.map(({ group, variantIndex }) => group.variants[variantIndex]);
     const totalGrams = items.reduce((s, r) => s + (r.weight_grams || 0), 0);
     let mismatch = null;
     if (items.length < params.countMin){
-      mismatch = `Only ${items.length} tea${items.length === 1 ? '' : 's'} fit the budget and filters - couldn't reach the requested minimum of ${params.countMin}.`;
+      mismatch = `Only ${items.length} tea${items.length === 1 ? '' : 's'} on ${site} fit the budget and filters - couldn't reach the requested minimum of ${params.countMin}.`;
     } else if (params.countMax !== null && items.length > params.countMax){
-      mismatch = `${items.length} teas fit within budget before it ran out - more than the requested maximum of ${params.countMax}.`;
+      mismatch = `${items.length} teas on ${site} fit within budget before it ran out - more than the requested maximum of ${params.countMax}.`;
     }
-    return { label, items, totalCost: spent, totalGrams, mismatch };
+    return { label, site, items, totalCost: spent, totalGrams, mismatch };
   }
 
-  function generateOption1(groups, params){
+  // NEW in v2.4: each generateOptionN now takes `siteGroups` (already
+  // narrowed to ONE site's groups by the caller - see pickCheapestSite()/
+  // pickRandomSite() above) instead of every eligible group across every
+  // site, and the winning site's name to label/tag the result with.
+  // Everything else about how each option picks its teas is unchanged
+  // from v2.2/v2.3.
+  function generateOption1(siteGroups, site, params){
     const orderFn = arr => arr.sort((a, b) => cartGroupCheapestPpg(a) - cartGroupCheapestPpg(b));
     const ordered = params.teaTypes.length >= 2
-      ? roundRobinByType(groups, params.teaTypes, orderFn)
-      : orderFn([...groups]);
+      ? roundRobinByType(siteGroups, params.teaTypes, orderFn)
+      : orderFn([...siteGroups]);
     let { cart, spent } = fillCartByBudget(ordered, params.budget, params.countMax);
     ({ cart, spent } = reconcileByDownsizing(cart, spent, params.budget, ordered, params.countMin));
     spent = upsizeLeftoverBudget(cart, spent, params.budget);
-    return finalizeCartOption('Option 1 — Cheap Prices', cart, spent, params);
+    return finalizeCartOption('Option 1 — Cheap Prices', site, cart, spent, params);
   }
 
-  function generateOption2(groups, params){
+  function generateOption2(siteGroups, site, params){
     const orderFn = arr => shuffleInPlace(arr);
     const ordered = params.teaTypes.length >= 2
-      ? roundRobinByType(groups, params.teaTypes, orderFn)
-      : orderFn([...groups]);
+      ? roundRobinByType(siteGroups, params.teaTypes, orderFn)
+      : orderFn([...siteGroups]);
     let { cart, spent } = fillCartByBudget(ordered, params.budget, null);
-    ({ cart, spent } = reconcileByReplacement(cart, spent, params.budget, groups, params.countMin));
+    ({ cart, spent } = reconcileByReplacement(cart, spent, params.budget, siteGroups, params.countMin));
     spent = upsizeLeftoverBudget(cart, spent, params.budget);
-    return finalizeCartOption('Option 2 — A Mixed Bag', cart, spent, params);
+    return finalizeCartOption('Option 2 — A Mixed Bag', site, cart, spent, params);
   }
 
-  function generateOption3(groups, candidateRows, params){
+  function generateOption3(siteGroups, siteCandidateRows, site, params){
     // "Above the 50th percentile" is judged against the price-per-gram
-    // of THIS generation's own eligible candidate pool (post every other
-    // filter) - not the whole-dataset percentile the badges on the main
-    // listings use (see CHANGES IN v2.2, item 2) - since "something
-    // special" should mean pricier than what's actually on offer here,
-    // not pricier than the entire catalog regardless of what got
-    // filtered out.
-    const ppgValues = candidateRows.map(r => r.price_per_gram).sort((a, b) => a - b);
+    // of THIS generation's own eligible candidate pool, now scoped to
+    // just this one site (post every other filter) - not the
+    // whole-dataset percentile the badges on the main listings use (see
+    // CHANGES IN v2.2, item 2) - since "something special" should mean
+    // pricier than what's actually on offer on THIS site, not pricier
+    // than the entire catalog regardless of what got filtered out.
+    const ppgValues = siteCandidateRows.map(r => r.price_per_gram).sort((a, b) => a - b);
     const median = medianOf(ppgValues);
-    const premiumGroups = median === null ? [] : groups
+    const premiumGroups = median === null ? [] : siteGroups
       .map(g => ({ ...g, variants: g.variants.filter(v => v.price_per_gram >= median) }))
       .filter(g => g.variants.length > 0);
 
@@ -3172,7 +3306,7 @@
     let { cart, spent } = fillCartByBudget(ordered, params.budget, null);
     ({ cart, spent } = reconcileByReplacement(cart, spent, params.budget, premiumGroups, params.countMin));
     spent = upsizeLeftoverBudget(cart, spent, params.budget);
-    return finalizeCartOption('Option 3 — Something Special', cart, spent, params);
+    return finalizeCartOption('Option 3 — Something Special', site, cart, spent, params);
   }
 
   // ---- Modal UI: checkbox multi-selects ----
@@ -3307,14 +3441,69 @@
     return el;
   }
 
+  // NEW in v2.4: builds a Shopify "cart permalink" - a plain GET URL of
+  // the form {store origin}/cart/{variantId}:{qty},{variantId2}:{qty2}
+  // that Shopify itself understands as "add these variants to my cart" -
+  // then the Check Out button opens it in a new tab. This is the closest
+  // thing to real one-click checkout that's possible from a static page
+  // with no login/API access to any of these stores: it lands the person
+  // on THAT site's own cart page with every item from this option
+  // already added, ready to review shipping/payment and check out
+  // normally from there. Every item in `items` is guaranteed to be from
+  // the same site (that's the whole point of the v2.4 single-website
+  // change above), so the origin only needs to be read off the first one.
+  function buildShopifyCartUrl(items){
+    const origin = new URL(items[0].product_url).origin;
+    const parts = items.map(r => `${r.variant_id}:1`);
+    return `${origin}/cart/${parts.join(',')}`;
+  }
+
+  function renderCheckoutButton(opt){
+    const wrap = document.createElement('div');
+    wrap.className = 'cart-checkout-row';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cart-checkout-btn';
+
+    // A cart built from an older CSV/database (written before v2.4
+    // started tracking variant_id) won't have anything to build a
+    // permalink out of - disable rather than send the person to a
+    // broken/empty cart URL.
+    const missingIds = opt.items.some(r => !r.variant_id);
+    if (missingIds){
+      btn.disabled = true;
+      btn.textContent = 'Check Out (reload data to enable)';
+      btn.title = 'This data was loaded from a file written before product IDs were tracked - load a CSV or database from the latest tracker run to enable checkout links.';
+    } else {
+      btn.textContent = `Check Out on ${opt.site}`;
+      btn.addEventListener('click', () => {
+        window.open(buildShopifyCartUrl(opt.items), '_blank', 'noopener,noreferrer');
+      });
+    }
+    wrap.appendChild(btn);
+    return wrap;
+  }
+
   function renderCartOptionCard(opt){
     const card = document.createElement('div');
     card.className = 'cart-option-card';
 
+    const titleRow = document.createElement('div');
+    titleRow.className = 'cart-option-title-row';
     const title = document.createElement('h4');
     title.className = 'cart-option-title';
     title.textContent = opt.label;
-    card.appendChild(title);
+    titleRow.appendChild(title);
+    if (opt.site){
+      const siteTag = document.createElement('div');
+      siteTag.className = 'cart-option-site';
+      siteTag.appendChild(faviconEl(opt.site));
+      const siteLabel = document.createElement('span');
+      siteLabel.textContent = opt.site;
+      siteTag.appendChild(siteLabel);
+      titleRow.appendChild(siteTag);
+    }
+    card.appendChild(titleRow);
 
     const gramsText = opt.totalGrams % 1 === 0 ? opt.totalGrams + 'g' : opt.totalGrams.toFixed(1) + 'g';
     const summary = document.createElement('div');
@@ -3336,6 +3525,7 @@
       card.appendChild(empty);
     } else {
       opt.items.forEach(r => card.appendChild(renderCartItem(r)));
+      card.appendChild(renderCheckoutButton(opt));
     }
 
     return card;
@@ -3364,6 +3554,7 @@
   let cartLastCandidateRows = null;
   let cartLastParams = null;
   let cartOption1Result = null;
+  let cartLastPerSite = null;        // NEW in v2.4: groups split by site - see groupsBySite()
 
   const cartModalOverlay = document.getElementById('cartModalOverlay');
   document.getElementById('makeCartBtn').addEventListener('click', () => {
@@ -3393,25 +3584,44 @@
       renderCartResults([empty('Option 1 — Cheap Prices'), empty('Option 2 — A Mixed Bag'), empty('Option 3 — Something Special')]);
       document.getElementById('cartRerollBtn').hidden = true;
       cartLastGroups = null;
+      cartLastPerSite = null;
       return;
     }
+
+    // NEW in v2.4: split into per-site buckets - see groupsBySite() and
+    // the "single website per cart" comments up top. Each of the three
+    // options below picks (and is scoped to) just one site's bucket.
+    const perSite = groupsBySite(groups);
 
     cartLastGroups = groups;
     cartLastCandidateRows = candidateRows;
     cartLastParams = params;
+    cartLastPerSite = perSite;
 
-    cartOption1Result = generateOption1(groups, params);
-    const opt2 = generateOption2(groups, params);
-    const opt3 = generateOption3(groups, candidateRows, params);
+    const site1 = pickCheapestSite(perSite);
+    cartOption1Result = generateOption1(perSite.get(site1), site1, params);
+
+    const site2 = pickRandomSite(perSite);
+    const opt2 = generateOption2(perSite.get(site2), site2, params);
+
+    const site3 = pickRandomSite(perSite);
+    const rowsForSite3 = candidateRows.filter(r => r.site === site3);
+    const opt3 = generateOption3(perSite.get(site3), rowsForSite3, site3, params);
 
     renderCartResults([cartOption1Result, opt2, opt3]);
     document.getElementById('cartRerollBtn').hidden = false;
   });
 
   document.getElementById('cartRerollBtn').addEventListener('click', () => {
-    if (!cartLastGroups || !cartOption1Result) return;
-    const opt2 = generateOption2(cartLastGroups, cartLastParams);
-    const opt3 = generateOption3(cartLastGroups, cartLastCandidateRows, cartLastParams);
+    if (!cartLastGroups || !cartOption1Result || !cartLastPerSite) return;
+
+    const site2 = pickRandomSite(cartLastPerSite);
+    const opt2 = generateOption2(cartLastPerSite.get(site2), site2, cartLastParams);
+
+    const site3 = pickRandomSite(cartLastPerSite);
+    const rowsForSite3 = cartLastCandidateRows.filter(r => r.site === site3);
+    const opt3 = generateOption3(cartLastPerSite.get(site3), rowsForSite3, site3, cartLastParams);
+
     renderCartResults([cartOption1Result, opt2, opt3]);
   });
 
