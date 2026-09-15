@@ -48,6 +48,14 @@
     --tag-teaware:    #697584;  /* swatch: slate blue-grey */
     --tag-tools:      #555D72;  /* swatch: navy-slate */
     --tag-tea-pet:    #9C7A6B;  /* NEW v1.5: warm unglazed-clay tone - close kin to teaware/tools, but distinct */
+    --tag-tylers-pick:#8393A9;  /* NEW v2.5: swatch - the one blue-grey from
+       the reference swatch strip that wasn't already spoken for (teaware
+       took the darker #697584, tools the darker-still #555D72) - close
+       enough kin to sit comfortably in the same palette, distinct enough
+       to read as its own thing at a glance */
+    --silver:         #C8CCD2;  /* NEW v2.5: the "lined with silver" border
+       on the Tyler's Pick badge - not from the swatch strip (nothing in
+       it reads as silver), a plain warm-white metallic grey instead */
 
     --font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
     --font-ui:      'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
@@ -459,6 +467,23 @@
     font-weight:500;
     /* color/border-color/background are set per-category inline via JS
        (see CATEGORY_COLORS in the script) - these are just a fallback. */
+  }
+  /* NEW in v2.5: the "Tyler's Pick" badge (see TYLERS_PICKS in the script).
+     Rendered as an ADDITIONAL .category-badge sitting right next to the
+     ordinary type badge, not a replacement for it - so it inherits all of
+     .category-badge's sizing/shape above. Only the border is overridden
+     here, to the dedicated --silver tone ("lined with silver" per the
+     v2.5 spec) instead of matching the badge's own fill color the way
+     every other .category-badge does inline via JS - that mismatch
+     between fill and border is what makes this one badge read as visually
+     distinct at a glance. A soft outer echo of the same silver is layered
+     on with box-shadow so the lining reads clearly even at this badge's
+     small size and thin border-width. */
+  .tylers-pick-badge{
+    border-width: 1.5px;
+    border-style: solid;
+    border-color: var(--silver) !important;
+    box-shadow: 0 0 0 1px rgba(200, 204, 210, 0.35);
   }
 
   /* ---------- Dataset toggle (Tea / Teaware & Tools) ---------- */
@@ -1174,7 +1199,7 @@
           <div class="weight-range-row">
             <input type="number" class="field weight-range-input" id="gramsFromInput" placeholder="Min" inputmode="numeric" min="0" step="1" value="0">
             <span class="weight-range-dash">–</span>
-            <input type="number" class="field weight-range-input" id="gramsToInput" placeholder="Max" inputmode="numeric" min="0" step="1" value="1000">
+            <input type="number" class="field weight-range-input" id="gramsToInput" placeholder="Max" inputmode="numeric" min="0" step="1">
           </div>
           <span class="weight-range-unit">In grams</span>
         </div>
@@ -1439,7 +1464,15 @@
     sortDir: 'asc',       // 'asc' | 'desc'
     showAll: false,      // NEW v1.5: false = top 10 only, true = every matching listing
     gramsFrom: 0,        // NEW v1.6: inclusive lower bound on weight_grams, or null if not set
-    gramsTo: 1000,       // NEW v1.6: inclusive upper bound on weight_grams, or null if not set
+    gramsTo: null,       // NEW v1.6: inclusive upper bound on weight_grams, or null if not set
+                         // CHANGED in v2.5: used to default to 1000 so the
+                         // filter started "pre-narrowed" to ordinary
+                         // package sizes - left blank/uncapped instead now,
+                         // same "empty box = no bound" convention the price
+                         // range filter already used, so every listing
+                         // (including large cakes/bricks over 1000g) shows
+                         // on first load instead of being silently filtered
+                         // out before the person even touches the filter.
     priceFrom: null,     // NEW v1.9: inclusive lower bound on price_usd, or null if not set
     priceTo: null,       // NEW v1.9: inclusive upper bound on price_usd, or null if not set
     showVisualize: false, // NEW v1.6: whether the Visualize Listings panel is open
@@ -1478,6 +1511,153 @@
     const n = parseInt(hex.slice(1), 16);
     const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  // ---------------------------------------------------------------------
+  // NEW in v2.5: "Tyler's Pick" tag - flags any listing that matches one
+  // of the teas on Tyler's own list (tyler_teas.txt). This is a plain,
+  // hand-typed list of tea names Tyler already owns/wants tracked - NOT
+  // scraped, and not guaranteed to spell things exactly the way the shop's
+  // own product title does - so matching below is deliberately tolerant of
+  // small wording differences (word order, a dropped "Tea", punctuation)
+  // rather than requiring an exact string match. A tyler_teas.txt entry
+  // that never matches any current listing is simply never tagged
+  // anywhere - there's no "unmatched" list to show or warn about, per the
+  // v2.5 spec ("if a tea ... cannot be matched ... it should simply be
+  // ignored").
+  //
+  // Keyed by the exact `site` value the tracker script writes (see SITES
+  // in tea_price_tracker.py) so a name never accidentally matches a
+  // same-named tea from the WRONG shop.
+  const TYLERS_PICKS = {
+    'Mountain Stream Teas': [
+      "Sanxia Green (Spring 2021)",
+      "Chi Lai Mountain Oolong (Spring 2021)",
+      "Chi Lai Mountain Oolong (Fall 2020)",
+      "Daily Drinker Honey Fragrance Black (Spring 2020)",
+      "Sanxia White (Winter 2020)",
+      "Orange Milk Blossom Oolong (Spring 2020)",
+      "Sun Moon Ruby 18 Black (Winter 2020)",
+      "Gardenia Flower Oolong (Spring 2021)",
+      "Wild Ginger Flower Oolong (Summer 2020)",
+      "Red Phoenix Shanlinxi Oolong (Summer 2021)",
+      "Heavy Charcoal Roast Dong Ding (Winter 2020)",
+      "Charcoal Mid-Roast Dong Ding Oolong (Winter 2020)",
+      "Unroasted Dong Ding Oolong (Winter 2020)",
+      "Chocolate Charcoal Roast Wuyi Oolong (Spring 2018)",
+      "Fall Pear Mountain Oolong (Summer 2021)",
+      "The Mayor's Alishan Oolong (Spring 2020)",
+      "Gapu Tea Cake",
+      "Aged Sanxia Green Tea Cake",
+      "Organic Alishan Oolong (Winter 2021)",
+      "Sun Moon Wild Cultivar Black (Summer 2022)",
+      "Valencia Orange Oolong Tea Ball (Winter 2019)",
+      "Daily Drinker Luye Red Oolong (Summer 2022)",
+      "Aged White Sanxia Tea Cake",
+      "Earth Ruby White Tea (Spring 2022)",
+      "Sanxia White Tea (Fall 2021)",
+      "Dragon's Eye Charcoal Tieguanyin (Spring 2017)",
+      "Phoenix Valley Shanlinxi Oolong (Spring 2022)",
+      "2016 Charcoal Roast #20 Oolong (Spring 2016)",
+      "Old Master Dong Ding Oolong (Spring 2021)",
+      "Buttermilk Oolong (Spring 2022)",
+      "Sun Moon Ruby 18 Black (Spring 2023)",
+      "Gardenia Flower Oolong (Spring 2023)",
+      "Charcoal Roast Ruby 18 Black (Spring 2022)",
+      "Wintergreen White Ruby (Winter 2024)",
+      "Orange Blossom Luye Red (Spring 2025)",
+      "South Eastern Wild Cultivar Oolong (Spring 2024)",
+      "Pear Mountain Charcoal Roast (Spring 2024)",
+      "Sun Moon Ruby 18 Black (Fall 2024)",
+      "Roast Red Fruit Wuyi (Spring 2022)",
+      "Sun Moon #8 Assamica Black (Fall 2024)",
+      "Alishan Firefly Milk Oolong (Winter 2024)",
+      "Sweet Assamica Red Oolong (Winter 2024)",
+      "1995 Muzha Tieguanyin (Spring 1995)",
+    ],
+    'Yunnan Sourcing': [
+      '2012 Yunnan Sourcing "Shang Chun" Raw Pu-erh Tea Cake',
+      '2007 Liming "Golden Peacock" Tippy Raw Pu-erh Tea Cake',
+      '"King of Duck Shit Aroma" Dan Cong Oolong Tea',
+      '2014 "Chen Nian Shou Mei" Aged White Tea Cake of Fuding',
+      '2017 Xiaguan "Da Xue Shan" Ripe Pu-erh Tea Mushroom Tuo',
+      "Sticky Rice Scent Ripe Pu-erh Mini Tuo Cha * Nuo Mi Xiang",
+      '2007 YiPinTang "Yi Wu Zhi Chun" Raw Pu-erh Tea Cake',
+    ],
+    // NOTE: tyler_teas.txt calls this site "White2Tea" - "white2tea" here
+    // is deliberate, matching the SITES key the tracker script actually uses.
+    'white2tea': [
+      "2025 Fox Down Mini × 3 ~7g",
+      "2021 Chapo × 1 25g",
+      "2021 Chapo Mid × 1 25g",
+      "2022 Tian Jian Mini × 1 ~7g",
+      "2018 White Tripel × 1 25g",
+      "2013 Shoumei × 1 25g",
+      "2020 Mall Ninja Dojo × 1 25g",
+      "2019 Gongmei Minis × 1 ~49g",
+      "2024 Silver Fox Mini × 1 7g",
+      "Wayward White × 1 25g",
+      "2025 Oriole × 1 200g",
+      "2017 Daily Drinker × 1 25g",
+      "2017 Old Reliable × 1 25g",
+      "2024 Ageless Phase Minis × 3 7g",
+      "2025 Lumber Slut × 1 25g",
+      "2025 Red Loon Mini × 1 7g",
+      "2025 520 Jin × 3 25g",
+      "2023 Repave × 1 25g",
+      "2023 La Sombra Mini × 3 ~7g",
+      "2024 Moon Bear Minis × 3 ~7g",
+    ],
+  };
+
+  // Lowercases, strips punctuation down to plain words, and - only for
+  // Tyler's own White2Tea entries, which he wrote as "<name> × <qty>
+  // <weight>" (e.g. "2021 Chapo × 1 25g") to note how much of it he
+  // wants - drops that trailing "× qty weight" purchase note, since it's
+  // not part of the tea's actual name and a real product title will never
+  // contain it. Harmless no-op on every other entry/title.
+  function normalizeTeaName(s){
+    return String(s || '')
+      .toLowerCase()
+      .replace(/\s*[×x]\s*\d+(?:\.\d+)?\s*~?\d+(?:\.\d+)?\s*(?:g|kg|oz)?\s*$/i, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+      .replace(/\s+/g, ' ');
+  }
+
+  const TYLER_MATCH_STOPWORDS = new Set(['the', 'and', 'of', 'a', 'an', 'tea']);
+
+  // True if `rowTitle` looks like the same tea as `tylerName`. Tries an
+  // exact (post-normalization) substring match first - covers the common
+  // case where one is just a truncated/extended version of the other -
+  // and falls back to requiring every "significant" word (longer than 2
+  // letters, not a generic filler word) from tylerName to show up
+  // somewhere in rowTitle, so reordered words or a shop's extra "Tea"/
+  // vintage-format differences don't block an otherwise-clear match.
+  // Deliberately tolerant, by design (see the TYLERS_PICKS comment
+  // above): a closely-related product name that's a superset of a
+  // shorter Tyler entry (e.g. tyler's plain "2021 Chapo" against a real
+  // "2021 Chapo Mid" listing) can co-match. Harmless whenever, as in
+  // Tyler's actual list, both the base tea and its variant are already
+  // on his list separately - just worth knowing if this list is ever
+  // edited to include a base tea's name but deliberately NOT one of its
+  // close variants.
+  function teaNameMatches(tylerName, rowTitle){
+    const a = normalizeTeaName(tylerName);
+    const b = normalizeTeaName(rowTitle);
+    if (!a || !b) return false;
+    if (b.includes(a) || a.includes(b)) return true;
+    const aWords = a.split(' ').filter(w => w.length > 2 && !TYLER_MATCH_STOPWORDS.has(w));
+    if (aWords.length === 0) return false;
+    return aWords.every(w => b.includes(w));
+  }
+
+  // True if this row matches one of Tyler's teas FROM THIS SAME SITE (see
+  // the TYLERS_PICKS comment above for why site must match too).
+  function isTylersPick(row){
+    const list = TYLERS_PICKS[row.site];
+    if (!list) return false;
+    return list.some(name => teaNameMatches(name, row.product_title));
   }
 
   // ---------------------------------------------------------------------
@@ -1998,12 +2178,14 @@
     state.yearTo = null;
     state.showAll = false;
     state.gramsFrom = 0;
-    state.gramsTo = 1000;
+    // CHANGED in v2.5: was 1000 - see the gramsTo state comment above,
+    // this reset should land back on the same "uncapped" starting point.
+    state.gramsTo = null;
     document.getElementById('yearSelect').value = 'all';
     document.getElementById('yearFromInput').value = '';
     document.getElementById('yearToInput').value = '';
     document.getElementById('gramsFromInput').value = '0';
-    document.getElementById('gramsToInput').value = '1000';
+    document.getElementById('gramsToInput').value = '';
     applyYearModeUI();
     render();
   }
@@ -2200,7 +2382,10 @@
     state.sortField = 'price'; state.sortDir = 'asc';
     state.yearMode = 'single'; state.yearFrom = null; state.yearTo = null;
     state.showAll = false;
-    state.gramsFrom = 0; state.gramsTo = 1000;
+    state.gramsFrom = 0;
+    // CHANGED in v2.5: was 1000 - see the gramsTo state comment up top;
+    // reset should land on the same blank/uncapped default as first load.
+    state.gramsTo = null;
     state.priceFrom = null; state.priceTo = null;
     state.showVisualize = false;
     state.showWhatsNew = false;
@@ -2210,7 +2395,7 @@
     document.getElementById('yearFromInput').value = '';
     document.getElementById('yearToInput').value = '';
     document.getElementById('gramsFromInput').value = '0';
-    document.getElementById('gramsToInput').value = '1000';
+    document.getElementById('gramsToInput').value = '';
     document.getElementById('priceFromInput').value = '';
     document.getElementById('priceToInput').value = '';
     applyStockButtonUI();
@@ -2596,6 +2781,26 @@
     badge.style.background = withAlpha(tagColor, 0.14);
     metaRow.appendChild(badge);
 
+    // NEW in v2.5: an ADDITIONAL badge, alongside (never instead of) the
+    // type badge above - see TYLERS_PICKS/isTylersPick() and the
+    // .tylers-pick-badge CSS rule for the "different color + silver
+    // lining" styling.
+    if (isTylersPick(r)){
+      const tylersBadge = document.createElement('span');
+      tylersBadge.className = 'category-badge tylers-pick-badge';
+      tylersBadge.textContent = "Tyler's Pick";
+      // withAlpha() needs a literal hex value (it can't resolve a CSS
+      // var()), so the fill below is hardcoded to match --tag-tylers-pick
+      // in the :root block - keep the two in sync if that ever changes.
+      tylersBadge.style.color = 'var(--tag-tylers-pick)';
+      // NOTE: border-color is intentionally NOT set inline here (unlike
+      // the ordinary badge above) - the silver lining comes from the
+      // .tylers-pick-badge CSS class instead, and an inline style here
+      // would override it.
+      tylersBadge.style.background = withAlpha('#8393A9', 0.16);
+      metaRow.appendChild(tylersBadge);
+    }
+
     if (r.year){
       const yearEl = document.createElement('span');
       yearEl.className = 'year-badge';
@@ -2952,6 +3157,29 @@
   // apart from "a different tea".
   function cartProductKey(row){ return row.site + '||' + row.product_url; }
 
+  // NEW in v2.5: a listing whose ONLY useful weight is exactly 1 gram is,
+  // per the v2.5 spec, priced "by the gram" - the shop expects the buyer
+  // to type in whatever quantity (= grams) they want at checkout, not to
+  // buy a single, literal 1-gram unit. These are pulled out of the
+  // ordinary `variants` list entirely (see buildCartProductGroups below)
+  // so they can never be picked as a bare, unscaled "1 unit" the way
+  // every other variant can - see GRAM_SCALE_MIN_QTY just below for how
+  // they're used instead.
+  function isPerGramVariant(row){
+    return row.weight_grams === 1;
+  }
+
+  // Below this many grams, a "priced by the gram" listing isn't a
+  // meaningful purchase - see the v2.5 spec's own "I don't want a
+  // singular gram ... to end up in a cart". So a gram-priced listing is
+  // either added at AT LEAST this many grams, or not added at all. 10g is
+  // a deliberately modest floor (roughly a couple of gongfu sessions'
+  // worth) meant only to rule out token/placeholder amounts - it's
+  // upsizeLeftoverBudget() (further down) that grows a pick further when
+  // there's budget room to do so, e.g. toward the spec's own "25x1g"
+  // example.
+  const GRAM_SCALE_MIN_QTY = 10;
+
   // Groups eligible rows into one entry per distinct product, each
   // holding all of that product's eligible size variants sorted
   // CHEAPEST-TOTAL-PRICE-FIRST. That ordering is what lets
@@ -2962,14 +3190,29 @@
   // CART ENTRY, never on the group itself), so the same group objects
   // can safely be reused/shared across all three cart options without
   // one option's picks affecting another's.
+  //
+  // NEW in v2.5: a per-gram-priced variant (see isPerGramVariant) is kept
+  // OFF this `variants` list and tracked separately on `gramVariant`
+  // instead, so pickAffordableVariant()/the discrete-size logic below can
+  // never select it directly - see tryAddGroup() further down for how it
+  // actually gets into a cart (always pre-scaled to a real quantity,
+  // never a bare 1 unit).
   function buildCartProductGroups(rows){
     const map = new Map();
     for (const r of rows){
       const key = cartProductKey(r);
       if (!map.has(key)){
-        map.set(key, { key, site: r.site, category: r.category, product_title: r.product_title, product_url: r.product_url, variants: [] });
+        map.set(key, { key, site: r.site, category: r.category, product_title: r.product_title, product_url: r.product_url, variants: [], gramVariant: null });
       }
-      map.get(key).variants.push(r);
+      const g = map.get(key);
+      if (isPerGramVariant(r)){
+        // Not expected in practice (a shop has no obvious reason to offer
+        // TWO different "buy any amount, priced per gram" options on the
+        // same product) - but if it happens, the cheaper-per-gram one wins.
+        if (!g.gramVariant || r.price_usd < g.gramVariant.price_usd) g.gramVariant = r;
+      } else {
+        g.variants.push(r);
+      }
     }
     const groups = [...map.values()];
     groups.forEach(g => g.variants.sort((a, b) => a.price_usd - b.price_usd));
@@ -2977,19 +3220,54 @@
   }
 
   function cartGroupCheapestPpg(group){
-    return Math.min(...group.variants.map(v => v.price_per_gram));
+    const values = group.variants.map(v => v.price_per_gram);
+    if (group.gramVariant) values.push(group.gramVariant.price_per_gram);
+    return values.length ? Math.min(...values) : Infinity;
   }
 
   // Returns the index of the cheapest variant in group.variants that
   // fits within `budget`, or -1 if even the cheapest one doesn't.
   // Variants are pre-sorted ascending by price_usd (see
   // buildCartProductGroups), so the first fit found scanning
-  // front-to-back is guaranteed to be the cheapest that fits.
+  // front-to-back is guaranteed to be the cheapest that fits. Never
+  // considers a per-gram-priced variant (group.gramVariant) - see
+  // tryAddGroup() for that.
   function pickAffordableVariant(group, budget){
     for (let i = 0; i < group.variants.length; i++){
       if (group.variants[i].price_usd <= budget) return i;
     }
     return -1;
+  }
+
+  // NEW in v2.5. The single entry point every cart-filling/reconciliation
+  // step below uses to add a brand-new product to a cart: tries an
+  // ordinary discrete size first (pickAffordableVariant), and only if
+  // that fails (or there simply isn't one - see buildCartProductGroups)
+  // falls back to the product's by-the-gram option, if it has one -
+  // scaled to whatever quantity fits `budgetAvailable`, so long as
+  // that's at least GRAM_SCALE_MIN_QTY grams (see its own comment for
+  // why). Returns null if neither works.
+  function tryAddGroup(group, budgetAvailable){
+    const idx = pickAffordableVariant(group, budgetAvailable);
+    if (idx !== -1){
+      return { group, variantIndex: idx, qty: 1, price: group.variants[idx].price_usd };
+    }
+    if (group.gramVariant){
+      const qty = Math.floor(budgetAvailable / group.gramVariant.price_usd);
+      if (qty >= GRAM_SCALE_MIN_QTY){
+        return { group, variantIndex: 'gram', qty, price: group.gramVariant.price_usd * qty };
+      }
+    }
+    return null;
+  }
+
+  // The current price of a cart entry - `qty` only ever matters for a
+  // by-the-gram entry (variantIndex === 'gram'); every ordinary discrete
+  // entry is implicitly qty 1.
+  function cartEntryPrice(entry){
+    return entry.variantIndex === 'gram'
+      ? entry.group.gramVariant.price_usd * entry.qty
+      : entry.group.variants[entry.variantIndex].price_usd;
   }
 
   function shuffleInPlace(arr){
@@ -3050,6 +3328,14 @@
       if (params.formFactors.length && !params.formFactors.includes(r.form_factor)) return false;
       if (params.gramsMin !== null && (r.weight_grams === null || r.weight_grams < params.gramsMin)) return false;
       if (params.gramsMax !== null && (r.weight_grams === null || r.weight_grams > params.gramsMax)) return false;
+      // NOTE (v2.5): a by-the-gram listing's raw weight_grams is always 1
+      // (see isPerGramVariant) - its REAL purchasable amount is chosen
+      // later by the cart builder, not fixed like an ordinary variant's.
+      // A gramsMin/gramsMax filter here is about "which size options
+      // should even be considered", so a gram-priced listing failing an
+      // (almost any) gramsMin filter above 1 is treated the same as any
+      // other too-small size would be - left out - rather than special-
+      // cased to bypass the filter.
       if (params.yearFrom !== null && (r.year === null || r.year < params.yearFrom)) return false;
       if (params.yearTo !== null && (r.year === null || r.year > params.yearTo)) return false;
       return true;
@@ -3112,22 +3398,25 @@
     for (const group of orderedGroups){
       if (used.has(group.key)) continue;
       if (maxCount !== null && cart.length >= maxCount) break;
-      const idx = pickAffordableVariant(group, budget - spent);
-      if (idx === -1) continue; // doesn't fit at any size - skip, keep walking
-      cart.push({ group, variantIndex: idx });
+      const added = tryAddGroup(group, budget - spent);
+      if (!added) continue; // doesn't fit at any size (or gram quantity) - skip, keep walking
+      cart.push({ group: added.group, variantIndex: added.variantIndex, qty: added.qty });
       used.add(group.key);
-      spent += group.variants[idx].price_usd;
+      spent += added.price;
     }
     return { cart, spent };
   }
 
   // Option 1's reconciliation step: if still short of the requested
   // minimum once the primary walk runs out of room, find the biggest
-  // available "downsize" (swap a cart item for a SMALLER/CHEAPER variant
-  // of that SAME tea) that frees up enough budget to afford one more
+  // available "downsize" that frees up enough budget to afford one more
   // distinct listing - repeating as needed. This is the "select less
   // amount of a particular tea in order to add an additional listing"
-  // mechanism from the v2.2 spec.
+  // mechanism from the v2.2 spec. As of v2.5 a "downsize" is either the
+  // original swap-for-a-smaller-size-of-the-same-tea move, OR - for a
+  // by-the-gram entry (variantIndex === 'gram') - trimming its quantity
+  // back down, never below GRAM_SCALE_MIN_QTY (see its own comment for
+  // why that floor exists), whichever frees up more budget.
   function reconcileByDownsizing(cart, spent, budget, orderedGroups, countMin){
     const used = new Set(cart.map(c => c.group.key));
     let guard = 0;
@@ -3135,32 +3424,46 @@
       let addedOutright = false;
       for (const group of orderedGroups){
         if (used.has(group.key)) continue;
-        const idx = pickAffordableVariant(group, budget - spent);
-        if (idx !== -1){
-          cart.push({ group, variantIndex: idx });
+        const added = tryAddGroup(group, budget - spent);
+        if (added){
+          cart.push({ group: added.group, variantIndex: added.variantIndex, qty: added.qty });
           used.add(group.key);
-          spent += group.variants[idx].price_usd;
+          spent += added.price;
           addedOutright = true;
           break;
         }
       }
       if (addedOutright) continue;
 
-      let bestSaving = 0, bestCartIdx = -1, bestVariantIdx = -1;
+      let bestSaving = 0, bestCartIdx = -1, bestChange = null;
       cart.forEach((entry, cartIdx) => {
+        if (entry.variantIndex === 'gram'){
+          if (entry.qty > GRAM_SCALE_MIN_QTY){
+            const saving = entry.group.gramVariant.price_usd * (entry.qty - GRAM_SCALE_MIN_QTY);
+            if (saving > bestSaving){
+              bestSaving = saving; bestCartIdx = cartIdx; bestChange = { qty: GRAM_SCALE_MIN_QTY };
+            }
+          }
+          return;
+        }
         const { group, variantIndex } = entry;
         for (let i = 0; i < variantIndex; i++){
           const saving = group.variants[variantIndex].price_usd - group.variants[i].price_usd;
           if (saving > bestSaving){
-            bestSaving = saving; bestCartIdx = cartIdx; bestVariantIdx = i;
+            bestSaving = saving; bestCartIdx = cartIdx; bestChange = { variantIndex: i };
           }
         }
       });
       if (bestCartIdx === -1) break; // no further downsize available - report the shortfall
 
       const entry = cart[bestCartIdx];
-      spent -= (entry.group.variants[entry.variantIndex].price_usd - entry.group.variants[bestVariantIdx].price_usd);
-      entry.variantIndex = bestVariantIdx;
+      if (entry.variantIndex === 'gram'){
+        spent -= entry.group.gramVariant.price_usd * (entry.qty - bestChange.qty);
+        entry.qty = bestChange.qty;
+      } else {
+        spent -= (entry.group.variants[entry.variantIndex].price_usd - entry.group.variants[bestChange.variantIndex].price_usd);
+        entry.variantIndex = bestChange.variantIndex;
+      }
     }
     return { cart, spent };
   }
@@ -3175,46 +3478,43 @@
     const used = new Set(cart.map(c => c.group.key));
     let guard = 0;
     while (cart.length < countMin && guard++ < 1000){
-      const addable = pool.find(g => !used.has(g.key) && pickAffordableVariant(g, budget - spent) !== -1);
-      if (addable){
-        const idx = pickAffordableVariant(addable, budget - spent);
-        cart.push({ group: addable, variantIndex: idx });
-        used.add(addable.key);
-        spent += addable.variants[idx].price_usd;
+      const addableGroup = pool.find(g => !used.has(g.key) && tryAddGroup(g, budget - spent) !== null);
+      if (addableGroup){
+        const added = tryAddGroup(addableGroup, budget - spent);
+        cart.push({ group: added.group, variantIndex: added.variantIndex, qty: added.qty });
+        used.add(addableGroup.key);
+        spent += added.price;
         continue;
       }
       if (cart.length === 0) break;
 
       let priciestIdx = 0;
       cart.forEach((entry, i) => {
-        const price = entry.group.variants[entry.variantIndex].price_usd;
-        const bestPrice = cart[priciestIdx].group.variants[cart[priciestIdx].variantIndex].price_usd;
-        if (price > bestPrice) priciestIdx = i;
+        if (cartEntryPrice(entry) > cartEntryPrice(cart[priciestIdx])) priciestIdx = i;
       });
       const priciest = cart[priciestIdx];
-      const priciestPrice = priciest.group.variants[priciest.variantIndex].price_usd;
+      const priciestPrice = cartEntryPrice(priciest);
       const hypotheticalBudget = (budget - spent) + priciestPrice;
 
       const candidates = pool.filter(g => !used.has(g.key) && g.key !== priciest.group.key);
       shuffleInPlace(candidates);
-      let replacement = null, replacementIdx = -1;
+      let replacement = null;
       for (const g of candidates){
-        const idx = pickAffordableVariant(g, hypotheticalBudget);
-        if (idx !== -1 && g.variants[idx].price_usd < priciestPrice){
-          replacement = g; replacementIdx = idx; break;
-        }
+        const added = tryAddGroup(g, hypotheticalBudget);
+        if (added && added.price < priciestPrice){ replacement = added; break; }
       }
       if (!replacement) break; // no viable cheaper swap left - report the shortfall
 
       used.delete(priciest.group.key);
       cart.splice(priciestIdx, 1);
       spent -= priciestPrice;
-      cart.push({ group: replacement, variantIndex: replacementIdx });
-      used.add(replacement.key);
-      spent += replacement.variants[replacementIdx].price_usd;
+      cart.push({ group: replacement.group, variantIndex: replacement.variantIndex, qty: replacement.qty });
+      used.add(replacement.group.key);
+      spent += replacement.price;
     }
     return { cart, spent };
   }
+
 
   // Final polish step, shared by all three options: if the primary walk
   // and reconciliation still leave meaningful budget unspent, spend it
@@ -3223,31 +3523,67 @@
   // up in weight if there is a little extra budget room" from the v2.2
   // spec. Never adds a new distinct tea, only resizes ones already in
   // the cart.
+  //
+  // NEW in v2.5: for a by-the-gram entry (variantIndex === 'gram'), the
+  // "next step up" is simply one more gram at that listing's own
+  // per-gram price - there's no separate list of discrete sizes to move
+  // through, so it just keeps competing, gram by gram, against every
+  // other cart item's next-size-up step, same as before. This is also
+  // how the spec's own "25x1g" example actually happens in practice: a
+  // by-the-gram pick enters the cart at GRAM_SCALE_MIN_QTY grams (see its
+  // own comment) via tryAddGroup(), then grows from there, one gram at a
+  // time, for as long as leftover budget allows. The guard is higher here
+  // than a typical loop in this file since gram-by-gram growth can
+  // legitimately take many iterations to exhaust a large leftover budget.
   function upsizeLeftoverBudget(cart, spent, budget){
     let guard = 0;
-    while (guard++ < 1000){
+    while (guard++ < 5000){
       const leftover = budget - spent;
       if (leftover <= 0.005) break;
-      let bestStep = Infinity, bestCartIdx = -1, bestVariantIdx = -1;
+      let bestStep = Infinity, bestCartIdx = -1, bestChange = null;
       cart.forEach((entry, cartIdx) => {
+        if (entry.variantIndex === 'gram'){
+          const step = entry.group.gramVariant.price_usd;
+          if (step > 0 && step <= leftover && step < bestStep){
+            bestStep = step; bestCartIdx = cartIdx; bestChange = { qty: entry.qty + 1 };
+          }
+          return;
+        }
         const { group, variantIndex } = entry;
         if (variantIndex + 1 < group.variants.length){
           const step = group.variants[variantIndex + 1].price_usd - group.variants[variantIndex].price_usd;
           if (step > 0 && step <= leftover && step < bestStep){
-            bestStep = step; bestCartIdx = cartIdx; bestVariantIdx = variantIndex + 1;
+            bestStep = step; bestCartIdx = cartIdx; bestChange = { variantIndex: variantIndex + 1 };
           }
         }
       });
       if (bestCartIdx === -1) break;
-      cart[bestCartIdx].variantIndex = bestVariantIdx;
+      Object.assign(cart[bestCartIdx], bestChange);
       spent += bestStep;
     }
     return spent;
   }
 
+  // NEW in v2.5: uniformly turns any cart entry - ordinary discrete pick
+  // OR by-the-gram pick - into a flat, display/checkout-ready item. A
+  // discrete entry's qty is always 1 (unchanged from pre-v2.5 behavior,
+  // just expressed as fields on the item now instead of always assumed);
+  // a by-the-gram entry's qty is whatever quantity was chosen (see
+  // tryAddGroup/reconcileByDownsizing/upsizeLeftoverBudget above).
+  function cartEntryToItem(entry){
+    const variant = entry.variantIndex === 'gram' ? entry.group.gramVariant : entry.group.variants[entry.variantIndex];
+    const qty = entry.variantIndex === 'gram' ? entry.qty : 1;
+    return {
+      ...variant,
+      cart_qty: qty,
+      cart_total_price: variant.price_usd * qty,
+      cart_total_grams: (variant.weight_grams || 0) * qty,
+    };
+  }
+
   function finalizeCartOption(label, site, cart, spent, params){
-    const items = cart.map(({ group, variantIndex }) => group.variants[variantIndex]);
-    const totalGrams = items.reduce((s, r) => s + (r.weight_grams || 0), 0);
+    const items = cart.map(cartEntryToItem);
+    const totalGrams = items.reduce((s, r) => s + r.cart_total_grams, 0);
     let mismatch = null;
     if (items.length < params.countMin){
       mismatch = `Only ${items.length} tea${items.length === 1 ? '' : 's'} on ${site} fit the budget and filters - couldn't reach the requested minimum of ${params.countMin}.`;
@@ -3295,9 +3631,19 @@
     // than the entire catalog regardless of what got filtered out.
     const ppgValues = siteCandidateRows.map(r => r.price_per_gram).sort((a, b) => a - b);
     const median = medianOf(ppgValues);
+    // NEW in v2.5: a by-the-gram product's gramVariant (see
+    // buildCartProductGroups) needs the same >= median check the
+    // discrete `variants` get, or an otherwise-premium by-the-gram
+    // listing would be silently dropped here (an empty `variants` after
+    // filtering used to mean "drop the whole group", which no longer
+    // holds now that a group can be gram-only).
     const premiumGroups = median === null ? [] : siteGroups
-      .map(g => ({ ...g, variants: g.variants.filter(v => v.price_per_gram >= median) }))
-      .filter(g => g.variants.length > 0);
+      .map(g => ({
+        ...g,
+        variants: g.variants.filter(v => v.price_per_gram >= median),
+        gramVariant: (g.gramVariant && g.gramVariant.price_per_gram >= median) ? g.gramVariant : null,
+      }))
+      .filter(g => g.variants.length > 0 || g.gramVariant);
 
     const orderFn = arr => shuffleInPlace(arr);
     const ordered = params.teaTypes.length >= 2
@@ -3421,17 +3767,22 @@
     const subBits = [r.site];
     if (r.variant_title) subBits.push(r.variant_title);
     if (r.form_factor) subBits.push(r.form_factor);
+    // NEW in v2.5: a by-the-gram pick's quantity is chosen by the cart
+    // builder itself (see GRAM_SCALE_MIN_QTY), not read off the shop's
+    // own listing/variant name the way every other item's size is - call
+    // it out explicitly so it doesn't just look like a plain "1g" listing.
+    if (r.cart_qty > 1) subBits.push(r.cart_qty + 'g selected (priced by the gram)');
     const sub = document.createElement('div');
     sub.className = 'cart-item-sub';
     sub.textContent = subBits.join(' · ');
     main.appendChild(sub);
 
-    const weightText = r.weight_grams !== null
-      ? (r.weight_grams % 1 === 0 ? r.weight_grams + 'g' : r.weight_grams.toFixed(1) + 'g')
+    const weightText = r.cart_total_grams
+      ? (r.cart_total_grams % 1 === 0 ? r.cart_total_grams + 'g' : r.cart_total_grams.toFixed(1) + 'g')
       : '';
     const price = document.createElement('div');
     price.className = 'cart-item-price';
-    const priceBits = ['<b>$' + r.price_usd.toFixed(2) + '</b>'];
+    const priceBits = ['<b>$' + r.cart_total_price.toFixed(2) + '</b>'];
     if (weightText) priceBits.push(weightText);
     if (r.price_per_gram !== null) priceBits.push('$' + r.price_per_gram.toFixed(4) + '/g');
     price.innerHTML = priceBits.join(' · ');
@@ -3452,9 +3803,13 @@
   // normally from there. Every item in `items` is guaranteed to be from
   // the same site (that's the whole point of the v2.4 single-website
   // change above), so the origin only needs to be read off the first one.
+  //
+  // NEW in v2.5: quantity is now r.cart_qty instead of a hardcoded 1 -
+  // ordinary items still carry cart_qty === 1 (see cartEntryToItem), so
+  // this needed no other change to keep working for them.
   function buildShopifyCartUrl(items){
     const origin = new URL(items[0].product_url).origin;
-    const parts = items.map(r => `${r.variant_id}:1`);
+    const parts = items.map(r => `${r.variant_id}:${r.cart_qty}`);
     return `${origin}/cart/${parts.join(',')}`;
   }
 
