@@ -1757,16 +1757,15 @@
   // substring matching before landing in OTHER.
   const TASTING_NOTE_TERMS_BY_CATEGORY = {
     'Plants/Herbaceous': [
-      'bamboo', 'fresh-cut grass', 'fresh cut grass', 'grass', 'fresh hay', 'hay',
-      'wet straw', 'straw',
+      'fresh-cut grass', 'fresh cut grass', 'grass', 'fresh hay', 'hay',
+      'wet straw', 'straw', 'vegetal', 'vegetable', 'vegetables',
       'alfalfa', 'asparagus', 'bean sprouts', 'green beans', 'peas', 'spinach',
-      'vegetal', 'vegetable', 'vegetables',
-      'basil', 'fennel', 'lavender', 'mint', 'peppermint', 'spearmint', 'parsley',
-      'rosemary', 'sage', 'thyme', 'herbal', 'herbaceous',
+      'basil', 'fennel', 'mint', 'peppermint', 'spearmint', 'parsley',
+      'rosemary', 'sage', 'thyme', 'herbal', 'herbs', 'herbaceous',
     ],
     'Floral': [
       'chrysanthemum', 'gardenia', 'geranium', 'honeysuckle', 'jasmine',
-      'osmanthus', 'peony', 'rose', 'floral',
+      'osmanthus', 'peony', 'rose', 'floral', 'lavender',
       'orchid', 'lilac', 'violet', 'hibiscus', 'elderflower', 'magnolia',
     ],
     'Milky': [
@@ -1783,11 +1782,11 @@
     'Sweet': [
       'brown sugar', 'caramel', 'honey', 'beeswax', 'honey/beeswax', 'malt',
       'syrup', 'toffee', 'vanilla', 'sugar', 'molasses', 'biscuit', 'bread',
-      'cookie',
+      'cookie', 'rice', 'raisin', 'date', 'dried fruit',
     ],
     'Fire/Animal': [
       'ash', 'leather', 'smoke', 'smoky', 'stable', 'toast', 'toasty',
-      'tobacco', 'campfire', 'barnyard',
+      'tobacco', 'campfire', 'barnyard', 'fire', 'charcoal',
     ],
     'Spicy': [
       'cardamom', 'cinnamon', 'clove', 'ginger', 'licorice', 'nutmeg',
@@ -1795,12 +1794,10 @@
     ],
     'Fruit': [
       'pineapple', 'banana', 'melon', 'mango',
-      'apple', 'apricot', 'pear',
-      'grape', 'muscale', 'muscat',
+      'apple', 'apricot', 'pear', 'grape', 'muscale', 'muscat',
       'mandarine', 'mandarin', 'orange', 'lemon', 'bergamot', 'lime',
       'blackcurrant', 'blueberry', 'rasberry', 'raspberry', 'strawberry',
-      'cherry', 'peach', 'plum', 'raisin', 'date', 'fig', 'dried fruit',
-      'citrus', 'fruity', 'fruit',
+      'cherry', 'peach', 'plum', 'fig', 'citrus', 'fruity', 'fruit',
     ],
     'Earthy': [
       'cedar', 'decaying bark', 'pine', 'wet wood', 'sawdust', 'oak',
@@ -1810,11 +1807,11 @@
     ],
     'Mineral': [
       'chalk', 'granite', 'metal', 'metallic', 'sulphur', 'sulfur',
-      'volcanic', 'mineral', 'wet stone', 'slate', 'graphite',
+      'volcanic', 'mineral', 'wet stone', 'slate', 'graphite', 'rock',
     ],
     'Marine': [
       'ocean air', 'oyster', 'shrimp', 'seaweed', 'fish', 'sea salt',
-      'seasalt', 'marine', 'brine', 'iodine',
+      'seasalt', 'marine', 'brine', 'iodine', 'river',
     ],
   };
   const NOTE_TERM_TO_CATEGORY = new Map();
