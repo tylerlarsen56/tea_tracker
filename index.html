@@ -329,6 +329,13 @@
      above. */
   .toggle-btn.active{ border-color:var(--amber); color:var(--amber); }
   .toggle-btn.active .dot{ background:var(--amber); }
+  /* NEW in v2.6: the "Tyler's Picks" filter toggle (see TYLERS_PICKS in
+     the script) - a plain on/off .toggle-btn like the year-range one
+     above, but themed to match the Tyler's Pick BADGE (same fill color +
+     silver dot/border) rather than plain amber, so the filter and the
+     badge it's filtering for read as the same feature at a glance. */
+  .toggle-btn.state-tylers{ border-color:var(--silver); color:var(--tag-tylers-pick); }
+  .toggle-btn.state-tylers .dot{ background:var(--tag-tylers-pick); box-shadow:0 0 0 1px rgba(200,204,210,0.5); }
 
   .sort-pair{ display:flex; gap:8px; }
   .sort-btn{
@@ -1239,6 +1246,17 @@
           <span id="stockToggleLabel">In stock only</span>
           <span class="dot"></span>
         </button>
+        <!-- NEW in v2.6: diagnostic + "fun feature" per the spec - lets
+             you actually SEE which listings Tyler's Picks (see
+             TYLERS_PICKS/isTylersPick() in the script) is matching,
+             rather than having to spot the badge scrolling through every
+             listing. Plain on/off, reusing the .toggle-btn shell the same
+             way the year-range toggle already does (see the CSS comment
+             on .toggle-btn.state-tylers). -->
+        <button type="button" class="toggle-btn" id="tylersPickToggle" style="margin-top:6px;">
+          <span>Tyler's Picks</span>
+          <span class="dot"></span>
+        </button>
       </div>
 
       <div class="filter-group">
@@ -1460,6 +1478,7 @@
     yearFrom: null,      // NEW v1.5: inclusive lower bound, or null if not set
     yearTo: null,        // NEW v1.5: inclusive upper bound, or null if not set
     stock: 'in',        // 'any' | 'in' | 'out' - NEW in v2.4: defaults to "in" (was "any")
+    tylersPickOnly: false, // NEW in v2.6: plain on/off - see TYLERS_PICKS/isTylersPick()
     sortField: 'price',  // 'price' | 'grams' (tea dataset only - accessories always sort by price_usd)
     sortDir: 'asc',       // 'asc' | 'desc'
     showAll: false,      // NEW v1.5: false = top 10 only, true = every matching listing
@@ -2181,6 +2200,12 @@
     // CHANGED in v2.5: was 1000 - see the gramsTo state comment above,
     // this reset should land back on the same "uncapped" starting point.
     state.gramsTo = null;
+    // NEW in v2.6: Tyler's Picks (see TYLERS_PICKS) only ever has entries
+    // for tea sites - same "tea-only, clear it on switch" treatment as
+    // Type/Year/grams above, so the toggle can't be left silently "on"
+    // while showing an always-empty Teaware/Tools view.
+    state.tylersPickOnly = false;
+    applyTylersPickButtonUI();
     document.getElementById('yearSelect').value = 'all';
     document.getElementById('yearFromInput').value = '';
     document.getElementById('yearToInput').value = '';
@@ -2304,6 +2329,19 @@
   }
 
   // -------------------------------------------------------------------
+  // NEW in v2.6: Tyler's Picks filter toggle - plain on/off, no cycling.
+  // -------------------------------------------------------------------
+  const tylersPickToggle = document.getElementById('tylersPickToggle');
+  tylersPickToggle.addEventListener('click', () => {
+    state.tylersPickOnly = !state.tylersPickOnly;
+    applyTylersPickButtonUI();
+    render();
+  });
+  function applyTylersPickButtonUI(){
+    tylersPickToggle.classList.toggle('state-tylers', state.tylersPickOnly);
+  }
+
+  // -------------------------------------------------------------------
   // Sort buttons: only one field is ever "active". Clicking the field
   // that's already active flips its direction; clicking the other field
   // switches to it (starting ascending).
@@ -2378,7 +2416,7 @@
   // -------------------------------------------------------------------
   document.getElementById('yearSelect').addEventListener('change', (e) => { state.year = e.target.value; render(); });
   document.getElementById('resetBtn').addEventListener('click', () => {
-    state.sites = []; state.types = []; state.year = 'all'; state.stock = 'in';
+    state.sites = []; state.types = []; state.year = 'all'; state.stock = 'in'; state.tylersPickOnly = false;
     state.sortField = 'price'; state.sortDir = 'asc';
     state.yearMode = 'single'; state.yearFrom = null; state.yearTo = null;
     state.showAll = false;
@@ -2399,6 +2437,7 @@
     document.getElementById('priceFromInput').value = '';
     document.getElementById('priceToInput').value = '';
     applyStockButtonUI();
+    applyTylersPickButtonUI();
     applySortButtonUI();
     applyYearModeUI();
     applyVisualizeButtonUI();
@@ -2455,6 +2494,11 @@
       if (state.priceTo !== null && (r.price_usd === null || r.price_usd > state.priceTo)) return false;
       if (state.stock === 'in' && !r.in_stock) return false;
       if (state.stock === 'out' && r.in_stock) return false;
+      // NEW in v2.6: see the Tyler's Picks toggle above. isTylersPick()
+      // already returns false gracefully for sites/rows with no
+      // TYLERS_PICKS entry (e.g. every Teaware/Tools row), so this is
+      // safe to apply regardless of dataset.
+      if (state.tylersPickOnly && !isTylersPick(r)) return false;
       return true;
     });
 
@@ -3604,10 +3648,22 @@
     const ordered = params.teaTypes.length >= 2
       ? roundRobinByType(siteGroups, params.teaTypes, orderFn)
       : orderFn([...siteGroups]);
-    let { cart, spent } = fillCartByBudget(ordered, params.budget, params.countMax);
+    // NEW in v2.6: Option 1 is the "buy cheap, maximize budget use" pick -
+    // per the spec it should keep adding more cheap teas past the
+    // requested max count if that's what it takes to spend down the
+    // budget, rather than stopping dead right at countMax and leaving
+    // money on the table. So, unlike Options 2 & 3 below, NO count cap is
+    // passed to fillCartByBudget here - every group that fits the
+    // remaining budget gets added, for as long as the budget allows.
+    let { cart, spent } = fillCartByBudget(ordered, params.budget, null);
     ({ cart, spent } = reconcileByDownsizing(cart, spent, params.budget, ordered, params.countMin));
     spent = upsizeLeftoverBudget(cart, spent, params.budget);
-    return finalizeCartOption('Option 1 — Cheap Prices', site, cart, spent, params);
+    // The "more than the requested maximum" mismatch doesn't apply here -
+    // deliberately exceeding it is the whole point of the change above,
+    // not a shortfall to report - so it's turned off for this option's
+    // own result only (countMin is left untouched: still worth flagging
+    // if even an uncapped budget couldn't reach the minimum).
+    return finalizeCartOption('Option 1 — Cheap Prices', site, cart, spent, { ...params, countMax: null });
   }
 
   function generateOption2(siteGroups, site, params){
@@ -3861,9 +3917,19 @@
     card.appendChild(titleRow);
 
     const gramsText = opt.totalGrams % 1 === 0 ? opt.totalGrams + 'g' : opt.totalGrams.toFixed(1) + 'g';
+    // NEW in v2.6: overall $/g for the whole cart, alongside the
+    // per-item $/g already shown on each line (see renderCartItem) - same
+    // "rounded to the nearest cent" precision the spec asked for. Omitted
+    // whenever totalGrams is 0 (an empty cart, or - in theory - a cart
+    // that's somehow all zero-weight items) since a per-gram rate isn't
+    // meaningful there.
+    const pricePerGramText = opt.totalGrams > 0 ? `$${(opt.totalCost / opt.totalGrams).toFixed(2)}/g` : null;
     const summary = document.createElement('div');
     summary.className = 'cart-option-summary';
-    summary.textContent = `$${opt.totalCost.toFixed(2)} · ${gramsText} · ${opt.items.length} tea${opt.items.length === 1 ? '' : 's'}`;
+    const summaryBits = [`$${opt.totalCost.toFixed(2)}`, gramsText];
+    if (pricePerGramText) summaryBits.push(pricePerGramText);
+    summaryBits.push(`${opt.items.length} tea${opt.items.length === 1 ? '' : 's'}`);
+    summary.textContent = summaryBits.join(' · ');
     card.appendChild(summary);
 
     if (opt.mismatch){
