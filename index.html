@@ -1838,14 +1838,15 @@
   // split for a simple filter/tag list.
   // ---------------------------------------------------------------------
   const FLAVOR_CATEGORY_COLORS = {
-    'Plants/Herbaceous': '#269366',
+    'Plants':            '#269366',
+    'Herbs':             '#51906b',
     'Fruit':             '#A6D04E',
     'Floral':            '#E78FA6',
     'Milky':             '#E5D5C8',
     'Nutty':             '#E3A16C',
-    'Chocolate':         '#6F4E37',  // not on the wheel - see comment above
+    'Chocolate':         '#6F4E37',
     'Sweet':             '#E26F5A',
-    'Grain':             '#C2A661', // NEW in v2.8 - not on the wheel, split out of "Sweet"
+    'Grain':             '#C2A661',
     'Fire/Animal':       '#B7554B',
     'Spicy':             '#A94B34',
     'Marine':            '#5B94CA',
@@ -1853,8 +1854,6 @@
     'Earthy':            '#834936',
     'Other':             '#8A7A70', // fallback for a note term this dictionary doesn't recognize
   };
-  // Every category a person can filter/tag by, in wheel order (clockwise,
-  // starting from PLANTS/HERBACEOUS) with OTHER last as the catch-all.
   const ALL_FLAVOR_CATEGORIES = Object.keys(FLAVOR_CATEGORY_COLORS);
 
   function flavorCategoryColor(category){
@@ -1873,8 +1872,11 @@
       'fresh-cut grass', 'fresh cut grass', 'grass', 'fresh hay', 'hay',
       'wet straw', 'straw', 'vegetal', 'vegetable', 'vegetables',
       'alfalfa', 'asparagus', 'bean sprouts', 'green beans', 'peas', 'spinach',
-      'basil', 'fennel', 'mint', 'peppermint', 'spearmint', 'parsley',
-      'rosemary', 'sage', 'thyme', 'herbal', 'herbs', 'herbaceous',
+      'broccoli',
+    ],
+    'Herbs': [
+            'basil', 'fennel', 'mint', 'peppermint', 'spearmint', 'parsley',
+            'rosemary', 'sage', 'thyme', 'herbal', 'herbs', 'herbaceous',
     ],
     'Floral': [
       'chrysanthemum', 'gardenia', 'geranium', 'honeysuckle', 'jasmine',
@@ -1895,9 +1897,10 @@
     ],
     'Sweet': [
       'brown sugar', 'caramel', 'honey', 'beeswax', 'honey/beeswax', 'malt',
-      'syrup', 'toffee', 'vanilla', 'sugar', 'molasses',
+      'syrup', 'toffee', 'vanilla', 'sugar', 'molasses', 'pumpkin',
       'raisin', 'date', 'dried fruit', 'sweet potato', 'jujube',
-      'nougat', 'sherbet', 'rum', 'custard', 'candy', 'taffy',
+      'nougat', 'sherbet', 'rum', 'custard', 'candy', 'taffy', 'amaretto',
+      'marshmellow',
     ],
     'Grain': [
       'rice', 'biscuit', 'cookie', 'barley', 'wheat', 'oat', 'hops',
@@ -1917,7 +1920,8 @@
       'mandarine', 'mandarin', 'orange', 'lemon', 'bergamot', 'lime',
       'blackcurrant', 'blueberry', 'rasberry', 'raspberry', 'strawberry',
       'cherry', 'peach', 'plum', 'fig', 'citrus', 'fruity', 'fruit',
-      'lingonberry', 'cranberry', 'guava', 'papaya',
+      'lingonberry', 'cranberry', 'guava', 'papaya', 'lychee', 'coconut',
+      'guarana',
     ],
     'Earthy': [
       'cedar', 'decaying bark', 'pine', 'wet wood', 'sawdust', 'oak',
@@ -3583,7 +3587,7 @@
       const empty = document.createElement('div');
       empty.className = 'empty-state';
       empty.innerHTML = state.showWhatsNew
-        ? '<h2>No new listings</h2><p>Nothing in the most recent run is new compared to ' + dbPreviousRunDate + '. Try loosening a filter, or click "See what\'s new" again to go back to all listings.</p>'
+        ? '<h2>No new listings</h2><p>Nothing in the most recent run is new compared to ' + dbPreviousRunDate + '. Try loosening a filter, or click "Back to all listings" to go back to all listings.</p>'
         : '<h2>Nothing matches those filters</h2><p>Try loosening a filter or hitting "Reset all filters" on the left.</p>';
       body.appendChild(empty);
       return;
