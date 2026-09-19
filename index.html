@@ -25,6 +25,8 @@
     --amber-ink: #241A0B;
     --gold-flare:#F0C868;   /* used only for the background glow */
     --jade:      #7C9A80;   /* in-stock indicator */
+    --silver-glow:    #D6DDE6;  /* "unread" outline on See what's new */
+    --silver-glow-ink:#E6ECF3;
     --rust:      #B1766E;   /* out-of-stock + Ripe Puer */
 
     /* ---- Tea-type tag colors: warm/varied, "appropriate" per type ---- */
@@ -353,6 +355,26 @@
   }
   .site-option:hover, .site-option:focus-visible{ background:var(--line-soft); }
   .site-option.active{ color:var(--amber); }
+
+  /* ---------- Accessories "Category" menu (two levels in one list) ----------
+     A group row (Teaware, Tea Tools, ...) with its sub-categories indented
+     beneath it. The hairline above each group separates one group's
+     sub-categories from the next group's heading; :first-child drops it so the
+     menu doesn't open with a rule under "All teaware & tools". */
+  .accessory-option-group{
+    font-weight:600;
+    letter-spacing:0.02em;
+    border-top:1px solid var(--line-soft);
+    margin-top:3px;
+    padding-top:10px;
+  }
+  .accessory-option-group:first-child{ border-top:none; margin-top:0; }
+  .accessory-option-sub{
+    padding-left:26px;
+    font-size:13px;
+    color:var(--ink-dim);
+  }
+  .accessory-option-sub:hover, .accessory-option-sub:focus-visible{ color:var(--ink); }
 
   /* ---------- Tea type multi-select checkboxes ----------
      The website-dropdown shell, plus a checkbox per option; the menu stays
@@ -766,6 +788,33 @@
   .visualize-btn:disabled:hover{
     border-color:var(--line);
     color:var(--ink);
+  }
+
+  /* ---------- "See what's new" unread glow ----------
+     Added only while this run actually brought new listings AND the button
+     hasn't been clicked for that run yet (see applyWhatsNewButtonUI). Silver
+     rather than the usual amber so it reads as "unread", not "active" - the
+     amber .active state is what the button looks like once the filter is on. */
+  .visualize-btn.has-new{
+    border-color:var(--silver-glow);
+    color:var(--silver-glow-ink);
+    animation:new-listings-glow 2.4s ease-in-out infinite;
+  }
+  .visualize-btn.has-new:hover{
+    border-color:var(--amber);
+    color:var(--amber);
+  }
+  @keyframes new-listings-glow{
+    0%,100%{ box-shadow:0 0 0 0 rgba(214,221,230,0.00), 0 0 4px 0 rgba(214,221,230,0.18); }
+    50%    { box-shadow:0 0 0 2px rgba(214,221,230,0.16), 0 0 12px 2px rgba(214,221,230,0.42); }
+  }
+  /* A pulsing outline is decoration, not information - the button's own label
+     and the badge next to it still say there's something new. */
+  @media (prefers-reduced-motion: reduce){
+    .visualize-btn.has-new{
+      animation:none;
+      box-shadow:0 0 0 2px rgba(214,221,230,0.16), 0 0 10px 1px rgba(214,221,230,0.35);
+    }
   }
 
   .visualize-panel{
@@ -1407,6 +1456,24 @@
         </div>
       </div>
 
+      <!-- The accessories-side counterpart of "Tea type": one hierarchical
+           multi-select over Teaware / Tea Tools / Tea Pets / Merch, with the
+           sub-categories present in the data nested under the first two (see
+           renderAccessoryMenu() and ACCESSORY_SUBCATEGORY_RULES). Hidden in
+           tea mode, the mirror image of #teaOnlyFilters. -->
+      <div id="accessoryOnlyFilters" hidden>
+        <div class="filter-group">
+          <label class="field-label" for="accessoryDropdownBtn">Category</label>
+          <div class="site-dropdown" id="accessoryDropdown">
+            <button type="button" class="site-dropdown-btn" id="accessoryDropdownBtn" aria-haspopup="listbox" aria-expanded="false">
+              <span id="accessoryDropdownLabel">All teaware &amp; tools</span>
+              <span class="chev">▾</span>
+            </button>
+            <div class="site-dropdown-menu" id="accessoryDropdownMenu" role="listbox" aria-multiselectable="true" hidden></div>
+          </div>
+        </div>
+      </div>
+
       <div id="teaOnlyFilters">
         <div class="filter-group">
           <label class="field-label" for="typeDropdownBtn">Tea type</label>
@@ -1471,7 +1538,7 @@
         <div class="filter-group" id="gramsFilterGroup">
           <span class="field-label">Total weight range</span>
           <div class="weight-range-row">
-            <input type="number" class="field weight-range-input" id="gramsFromInput" placeholder="Min" inputmode="numeric" min="0" step="1" value="0">
+            <input type="number" class="field weight-range-input" id="gramsFromInput" placeholder="Min" inputmode="numeric" min="0" step="1">
             <span class="weight-range-dash">–</span>
             <input type="number" class="field weight-range-input" id="gramsToInput" placeholder="Max" inputmode="numeric" min="0" step="1">
           </div>
@@ -1583,7 +1650,7 @@
       <div class="cart-field">
         <span class="field-label">Websites</span>
         <div class="cart-checkbox-box" id="cartSiteBox"></div>
-        <div class="cart-hint">Leave unchecked to let each cart option pick a site automatically. Since each cart is now single-website, checking 2+ just widens which sites are eligible - it won't mix them into one cart.</div>
+        <div class="cart-hint">Leave unchecked to let each cart option pick a site automatically. Checking 2+ won't mix them into one cart.</div>
       </div>
 
       <div class="cart-field">
@@ -1592,11 +1659,25 @@
         <div class="cart-hint">Leave all unchecked for no restriction.</div>
       </div>
 
+      <!-- Same flavor-category taxonomy as the sidebar's Flavor Profile
+           filter, from the scraper's `notes` column. -->
+      <div class="cart-field">
+        <span class="field-label">Tasting notes</span>
+        <div class="cart-checkbox-box" id="cartFlavorBox"></div>
+        <div class="cart-hint">Leave all unchecked for no restriction. A tea qualifies if any of its notes falls in a checked flavor.</div>
+      </div>
+
       <div class="cart-field">
         <span class="field-label" for="cartBudgetInput">Total budget</span>
         <div class="cart-range-row">
           <span class="cart-range-dash">$</span>
-          <input type="number" class="field" id="cartBudgetInput" placeholder="e.g. 150" inputmode="decimal" min="0" step="0.01">
+          <!-- step="1" so the spinner arrows move the budget a DOLLAR at a
+               time. A cart budget is never a cents-level decision, and at
+               step="0.01" holding the arrow took a hundred clicks per dollar.
+               Typing "149.99" still works: step only governs the arrows and
+               the browser's own validation, which inputmode="decimal" and a
+               free-text entry are unaffected by. -->
+          <input type="number" class="field" id="cartBudgetInput" placeholder="e.g. 150" inputmode="decimal" min="0" step="1">
         </div>
         <div class="cart-hint">Hard ceiling - carts will never go over this.</div>
       </div>
@@ -1707,6 +1788,10 @@
   let currentSites = [];
   // Same idea, for the Form factor dropdown (renderFormFactorMenu()).
   let currentFormFactors = [];
+  // Accessory categories present in the loaded data, each with the
+  // sub-categories its own rows actually use:
+  // [{ category: 'Teaware', subs: ['Cups & Bowls', ...] }, ...]
+  let currentAccessoryGroups = [];
 
   // Database-loading state, meaningful only when a .db was loaded last.
   //   dataSource     - 'csv' | 'db' | null
@@ -1734,11 +1819,20 @@
     sortField: 'price',  // 'price' | 'grams' (tea dataset only - accessories always sort by price_usd)
     sortDir: 'asc',       // 'asc' | 'desc'
     showAll: false,      // false = top 10 only, true = every match
-    gramsFrom: 0,        // inclusive lower bound on weight_grams, or null
+    gramsFrom: null,     // inclusive lower bound on weight_grams, or null
+                         // Blank rather than the old 0 default. A bound of 0
+                         // reads as "no minimum", but the filter below drops
+                         // any row whose weight couldn't be parsed, so a 0 in
+                         // this box silently hid every weightless listing on
+                         // first load - which is most of the Tea Resin ones
+                         // ("1 Tin (20 Tea Resins)" states no grams anywhere).
     gramsTo: null,       // inclusive upper bound on weight_grams, or null
                          // Blank rather than the old 1000 default, so
                          // large cakes aren't silently filtered out.
     flavorCategories: [], // selected flavor categories; empty = all
+    // Accessories-mode "Category" filter. Both empty = every accessory.
+    accessoryGroups: [],  // whole categories: 'Teaware', 'Tea Pet', ...
+    accessorySubs: [],    // "Category|Sub" keys; see accessorySubKey()
     formFactors: [], // selected form_factor values; empty = all
     vizXAxis: 'price',    // 'price' | 'vintage' dot-plot; forced to 'price' for accessories
     priceFrom: null,     // inclusive lower bound on price_usd, or null
@@ -1750,6 +1844,69 @@
   // Teaware/Tea Tools/Tea Pet are their own dataset, never part of the
   // tea-type list or the "All types" tea filter.
   const ACCESSORY_CATEGORIES = new Set(['Teaware', 'Tea Tools', 'Tea Pet', 'Merch']);
+
+  // -------------------------------------------------------------------
+  // Accessory sub-categories (the "Category" filter in accessories mode).
+  //
+  // Derived here from the product title rather than stored by the scraper,
+  // which keeps the whole feature inside this file and means it works on
+  // databases written before it existed - the same arrangement the tasting-note
+  // categories use (TASTING_NOTE_TERMS_BY_CATEGORY above).
+  //
+  // ONE ordered list serves every accessory category, because the Teaware vs
+  // Tea Tools line is the shop's, not ours, and shops disagree: a tea towel is
+  // filed under Teaware by some and Tea Tools by others. Building the menu from
+  // what each category actually contains (see renderAccessoryMenu) means a
+  // sub-category only appears where it exists, so sharing the list costs
+  // nothing and stops a misfiled towel from being unreachable.
+  //
+  // ORDER IS THE WHOLE DESIGN - first match wins, so the specific comes before
+  // the general: "fairness cup" must reach Pitchers before Cups & Bowls claims
+  // it, and a "Gongfu Tea Set" must reach Tea Sets before Teapots.
+  // -------------------------------------------------------------------
+  const ACCESSORY_SUBCATEGORY_RULES = [
+    ['Tea Sets',               /\btea\s*sets?\b|\bteasets?\b|\btasting\s*sets?\b|\butensils?\b|\bcha\s*dao\b|\bmatcha\s*sets?\b|\bgong\s*?fu\s*sets?\b|\bstarter\s*(?:kit|set)s?\b|\b\d+[\s-]*piece\b|\btravel(?:l?ing)?\s*sets?\b/i],
+    ['Tea Pets',               /\btea\s*pets?\b|\bteapets?\b|\bcha\s*chong\b|\bchawang\b|\bmascots?\b/i],
+    ['Pitchers',               /\bcha\s*hai\b|\bchahai\b|\bfairness\s*(?:cup|pitcher)s?\b|\bpitchers?\b|\bgong\s*dao\s*bei\b|\bgongdaobei\b|\bjustice\s*cups?\b|\bdecanters?\b/i],
+    ['Gaiwans',                /\bgaiwans?\b|\bgai\s*wan\b|\bzhongs?\b|\bcovered\s*bowls?\b|\blidded\s*bowls?\b/i],
+    ['Teapots',                /\bteapots?\b|\btea\s*pots?\b|\bkyusus?\b|\bshui\s*ping\b|\bshuiping\b|\bxi\s*shi\b|\bside[\s-]*handles?\b|\bclay\s*pots?\b|\bhoubin\b|\bpots?\b/i],
+    ['Kettles & Brewers',      /\bkettles?\b|\bthermos(?:es)?\b|\btravel\s*mugs?\b|\bflasks?\b|\bwater\s*boilers?\b|\bbrewers?\b|\bboilers?\b/i],
+    ['Picks & Knives',         /\bpicks?\b|\btea\s*needles?\b|\bpu-?e?r?h?\s*knives?\b|\bknives?\b|\bknife\b|\bawls?\b/i],
+    ['Trays & Boats',          /\btrays?\b|\bcha\s*pan\b|\bchapan\b|\btea\s*boats?\b|\btea\s*tables?\b|\bwater\s*tanks?\b|\bboards?\b|\bdrainage\b|\bgan\s*pao\b/i],
+    ['Cloths, Mats & Brushes', /\btowels?\b|\bcha\s*bu\b|\bchabu\b|\bcloths?\b|\bmats?\b|\bmicrofib(?:er|re)\b|\brunners?\b|\bnapkins?\b|\bbrush(?:es)?\b/i],
+    ['Infusers & Strainers',   /\binfusers?\b|\bstrainers?\b|\bsteepers?\b|\bfilters?\b|\bsieves?\b/i],
+    ['Scales & Scoops',        /\bscales?\b|\bscoops?\b|\btweezers?\b|\bspoons?\b|\btongs?\b|\bshovels?\b|\bcha\s*ze\b|\bcha\s*he\b|\btimers?\b/i],
+    ['Wrapping & Paper',       /\bwrapping\s*papers?\b|\bcake\s*wrappers?\b|\bwrappers?\b|\bpapers?\b|\bpackaging\b/i],
+    ['Storage & Caddies',      /\bstorage\b|\bcadd(?:y|ies)\b|\bcanisters?\b|\bjars?\b|\btin\s*cans?\b|\btins?\b|\bsacks?\b|\bpouch(?:es)?\b|\bbags?\b/i],
+    ['Cups & Bowls',           /\bcups?\b|\bteacups?\b|\btea\s*bowls?\b|\bbowls?\b|\btumblers?\b|\bmugs?\b|\bchawan\b|\bcha\s*bei\b|\bchabei\b|\bdrinkware\b/i],
+    ['Saucers & Stands',       /\bsaucers?\b|\bcoasters?\b|\blid\s*(?:holder|rest)s?\b|\bstands?\b|\bholders?\b|\bplates?\b|\bdishes\b|\bdish\b|\bracks?\b/i],
+    ['Incense',                /\bincense\b|\bcensers?\b|\bjoss\s*sticks?\b/i],
+  ];
+  const ACCESSORY_SUBCATEGORY_OTHER = 'Other';
+
+  // Only these two get sub-categories in the menu. Tea Pets and Merch are each
+  // one thing already, and splitting them would add a submenu whose only entry
+  // is "Other".
+  const ACCESSORY_CATEGORIES_WITH_SUBS = new Set(['Teaware', 'Tea Tools']);
+
+  // The order the groups appear in the menu. Anything else the data turns up is
+  // appended after these, so a category added to the scraper later still shows.
+  const ACCESSORY_GROUP_ORDER = ['Teaware', 'Tea Tools', 'Tea Pet', 'Merch'];
+  const ACCESSORY_GROUP_LABELS = { 'Tea Pet': 'Tea Pets' };
+  function accessoryGroupLabel(category){ return ACCESSORY_GROUP_LABELS[category] || category; }
+
+  function accessorySubcategory(r){
+    if (!ACCESSORY_CATEGORIES_WITH_SUBS.has(r.category)) return null;
+    const text = (r.product_title || '') + ' | ' + (r.variant_title || '');
+    for (const [label, pattern] of ACCESSORY_SUBCATEGORY_RULES){
+      if (pattern.test(text)) return label;
+    }
+    return ACCESSORY_SUBCATEGORY_OTHER;
+  }
+
+  // A selected sub-category is stored as "Category|Sub" so the same label under
+  // two groups ("Storage & Caddies" appears under both) stays independent.
+  function accessorySubKey(category, sub){ return category + '|' + sub; }
 
   // Per-category tag colors. Keys must match the CSV's `category` values.
   // Unlisted categories fall back to --tag-other.
@@ -2233,7 +2390,18 @@
     'Farmerleaf': 'farmerleaf.com',
     'Crimson Lotus Tea': 'crimsonlotustea.com',
     'Path of Cha': 'pathofcha.com',
+    'white2tea': 'white2tea.com',
+    // Non-Shopify sites (see site_adapters.py in the scraper).
+    'Verdant Tea': 'verdanttea.com',
+    'Mei Leaf': 'meileaf.com',
+    'TWG Tea': 'twgtea.com',
   };
+
+  // Shops that don't run on Shopify, so there is no {origin}/cart/{id}:{qty}
+  // permalink to build for them - see renderCheckoutButton(). Kept in step with
+  // the adapters in site_adapters.py; a name missing here only costs a slightly
+  // wrong tooltip on a button that is disabled either way.
+  const NON_SHOPIFY_SITES = new Set(['Verdant Tea', 'Mei Leaf', 'TWG Tea']);
 
   // Deterministic fallback colors for the lettered icon, so a given site
   // name always gets the same color rather than a random one each load.
@@ -2375,6 +2543,40 @@
     currentFormFactors = formFactors;
     state.formFactors = state.formFactors.filter(f => formFactors.includes(f));
     renderFormFactorMenu();
+
+    // Accessory "Category" menu (accessories mode only). Groups and their
+    // sub-categories both come from the rows themselves, so nothing empty is
+    // ever offered - and the sub-category ORDER follows
+    // ACCESSORY_SUBCATEGORY_RULES rather than the alphabet, keeping the most
+    // common kinds ("Teapots", "Gaiwans") near the top of each group.
+    const accessoryRows = allRows.filter(r => ACCESSORY_CATEGORIES.has(r.category));
+    const subsByCategory = new Map();
+    accessoryRows.forEach(r => {
+      if (!subsByCategory.has(r.category)) subsByCategory.set(r.category, new Set());
+      const sub = accessorySubcategory(r);
+      if (sub) subsByCategory.get(r.category).add(sub);
+    });
+    const knownFirst = [
+      ...ACCESSORY_GROUP_ORDER.filter(c => subsByCategory.has(c)),
+      ...[...subsByCategory.keys()].filter(c => !ACCESSORY_GROUP_ORDER.includes(c)).sort(),
+    ];
+    const ruleOrder = ACCESSORY_SUBCATEGORY_RULES.map(([label]) => label);
+    currentAccessoryGroups = knownFirst.map(category => {
+      const present = subsByCategory.get(category);
+      const subs = [
+        ...ruleOrder.filter(s => present.has(s)),
+        ...(present.has(ACCESSORY_SUBCATEGORY_OTHER) ? [ACCESSORY_SUBCATEGORY_OTHER] : []),
+      ];
+      return { category, subs };
+    });
+    // Drop selections the new data no longer has, so a stale tick can't keep
+    // narrowing results invisibly.
+    const validGroups = new Set(currentAccessoryGroups.map(g => g.category));
+    const validSubs = new Set();
+    currentAccessoryGroups.forEach(g => g.subs.forEach(s => validSubs.add(accessorySubKey(g.category, s))));
+    state.accessoryGroups = state.accessoryGroups.filter(c => validGroups.has(c));
+    state.accessorySubs = state.accessorySubs.filter(k => validSubs.has(k));
+    renderAccessoryMenu();
 
     // Dataset toggle counts.
     const accessoryCount = allRows.length - teaRows.length;
@@ -2524,14 +2726,31 @@
     formFactorDropdownMenu.hidden ? openFormFactorMenu() : closeFormFactorMenu();
   });
 
+  const accessoryDropdownBtn = document.getElementById('accessoryDropdownBtn');
+  const accessoryDropdownMenu = document.getElementById('accessoryDropdownMenu');
+  function openAccessoryMenu(){
+    accessoryDropdownMenu.hidden = false;
+    accessoryDropdownBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeAccessoryMenu(){
+    accessoryDropdownMenu.hidden = true;
+    accessoryDropdownBtn.setAttribute('aria-expanded', 'false');
+  }
+  accessoryDropdownBtn.addEventListener('click', () => {
+    accessoryDropdownMenu.hidden ? openAccessoryMenu() : closeAccessoryMenu();
+  });
+
   document.addEventListener('click', (e) => {
     if (!document.getElementById('siteDropdown').contains(e.target)) closeSiteMenu();
     if (!document.getElementById('typeDropdown').contains(e.target)) closeTypeMenu();
     if (!document.getElementById('flavorDropdown').contains(e.target)) closeFlavorMenu();
     if (!document.getElementById('formFactorDropdown').contains(e.target)) closeFormFactorMenu();
+    if (!document.getElementById('accessoryDropdown').contains(e.target)) closeAccessoryMenu();
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape'){ closeSiteMenu(); closeTypeMenu(); closeFlavorMenu(); closeFormFactorMenu(); }
+    if (e.key === 'Escape'){
+      closeSiteMenu(); closeTypeMenu(); closeFlavorMenu(); closeFormFactorMenu(); closeAccessoryMenu();
+    }
   });
 
   // Rebuilds the tea-type menu from currentTeaTypes. Called after every
@@ -2702,6 +2921,101 @@
     return btn;
   }
 
+  // -------------------------------------------------------------------
+  // Accessories "Category" menu: two levels in one list. A group row selects
+  // the whole category; the rows indented under it select one sub-category.
+  // Built from the loaded data (currentAccessoryGroups), so it only ever
+  // offers something that would return results.
+  // -------------------------------------------------------------------
+  function renderAccessoryMenu(){
+    const menu = document.getElementById('accessoryDropdownMenu');
+    menu.innerHTML = '';
+    menu.appendChild(accessoryOption('all', 'All teaware & tools', null, null, false));
+    currentAccessoryGroups.forEach(group => {
+      menu.appendChild(accessoryOption(
+        'group', accessoryGroupLabel(group.category), group.category, null, false));
+      group.subs.forEach(sub => menu.appendChild(accessoryOption(
+        'sub', sub, group.category, sub, true)));
+    });
+    updateAccessoryDropdownLabel();
+  }
+
+  function accessoryOption(kind, label, category, sub, indented){
+    const isAllOption = kind === 'all';
+    const isGroup = kind === 'group';
+    const checked = isAllOption
+      ? (state.accessoryGroups.length === 0 && state.accessorySubs.length === 0)
+      : isGroup
+        ? state.accessoryGroups.includes(category)
+        : state.accessorySubs.includes(accessorySubKey(category, sub));
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'site-option'
+      + (isGroup ? ' accessory-option-group' : '')
+      + (indented ? ' accessory-option-sub' : '');
+    btn.setAttribute('role', 'option');
+    btn.setAttribute('aria-selected', String(checked));
+
+    const box = document.createElement('span');
+    box.className = 'type-checkbox' + (checked ? ' checked' : '');
+    box.textContent = checked ? '✓' : '';
+    btn.appendChild(box);
+
+    const span = document.createElement('span');
+    span.textContent = label;
+    btn.appendChild(span);
+
+    btn.addEventListener('click', (e) => {
+      // See the matching comment in typeOption() above.
+      e.stopPropagation();
+      if (isAllOption){
+        state.accessoryGroups = [];
+        state.accessorySubs = [];
+      } else if (isGroup){
+        const idx = state.accessoryGroups.indexOf(category);
+        if (idx === -1){
+          state.accessoryGroups.push(category);
+          // Ticking the whole group makes its own sub-selections redundant;
+          // leaving them would tick boxes that no longer narrow anything.
+          state.accessorySubs = state.accessorySubs.filter(k => !k.startsWith(category + '|'));
+        } else {
+          state.accessoryGroups.splice(idx, 1);
+        }
+      } else {
+        const key = accessorySubKey(category, sub);
+        const idx = state.accessorySubs.indexOf(key);
+        if (idx === -1){
+          state.accessorySubs.push(key);
+          // The reverse of the above: picking one sub-category is a request to
+          // narrow, so it turns the whole-group tick off.
+          state.accessoryGroups = state.accessoryGroups.filter(c => c !== category);
+        } else {
+          state.accessorySubs.splice(idx, 1);
+        }
+      }
+      renderAccessoryMenu(); // redraw checks + label, menu stays open
+      state.showAll = false;
+      render();
+    });
+    return btn;
+  }
+
+  function updateAccessoryDropdownLabel(){
+    const label = document.getElementById('accessoryDropdownLabel');
+    const groups = state.accessoryGroups.length;
+    const subs = state.accessorySubs.length;
+    const total = groups + subs;
+    if (total === 0) label.textContent = 'All teaware & tools';
+    else if (total === 1){
+      label.textContent = groups === 1
+        ? accessoryGroupLabel(state.accessoryGroups[0])
+        : state.accessorySubs[0].split('|')[1];
+    } else {
+      label.textContent = total + ' categories selected';
+    }
+  }
+
   function updateFormFactorDropdownLabel(){
     const label = document.getElementById('formFactorDropdownLabel');
     if (state.formFactors.length === 0) label.textContent = 'All form factors';
@@ -2721,6 +3035,7 @@
     datasetTeaBtn.classList.toggle('active', value === 'tea');
     datasetAccessoryBtn.classList.toggle('active', value === 'accessories');
     document.getElementById('teaOnlyFilters').hidden = (value === 'accessories');
+    document.getElementById('accessoryOnlyFilters').hidden = (value === 'tea');
     document.getElementById('sortGramsWrap').hidden = (value === 'accessories');
     document.getElementById('sortFieldLabel').textContent =
       value === 'accessories' ? 'Sort by' : 'Sort by (one at a time)';
@@ -2740,6 +3055,11 @@
     // Form factor is tea-only too - same treatment.
     state.formFactors = [];
     renderFormFactorMenu();
+    // ...and the accessory Category filter is the mirror image: cleared on
+    // switch so it can't sit "on" behind the tea view.
+    state.accessoryGroups = [];
+    state.accessorySubs = [];
+    renderAccessoryMenu();
     // "Vintage year" means nothing for accessories - force the Visualize
     // panel back to its price view.
     state.vizXAxis = 'price';
@@ -2748,7 +3068,7 @@
     state.yearFrom = null;
     state.yearTo = null;
     state.showAll = false;
-    state.gramsFrom = 0;
+    state.gramsFrom = null;
     // Reset lands on the same uncapped default as first load.
     state.gramsTo = null;
     // Tyler's Picks only ever has tea-site entries - cleared on switch, so
@@ -2758,7 +3078,7 @@
     document.getElementById('yearSelect').value = 'all';
     document.getElementById('yearFromInput').value = '';
     document.getElementById('yearToInput').value = '';
-    document.getElementById('gramsFromInput').value = '0';
+    document.getElementById('gramsFromInput').value = '';
     document.getElementById('gramsToInput').value = '';
     applyYearModeUI();
     render();
@@ -2929,17 +3249,41 @@
   // Visualize Listings toggle. render() rebuilds the panel itself.
   // -------------------------------------------------------------------
   const whatsNewBtn = document.getElementById('whatsNewBtn');
+
+  // The glow is "you haven't looked at this week's new listings yet", so the
+  // acknowledgement is remembered per run_date: clicking clears it for THIS
+  // run, and next week's run brings it back on its own. localStorage is
+  // wrapped because it throws in private windows and on file:// in some
+  // browsers - a dashboard that won't load is worse than a glow that repeats.
+  const WHATS_NEW_SEEN_KEY = 'teaTracker.whatsNewSeenRun';
+  function whatsNewSeenForCurrentRun(){
+    if (!dbCurrentRunDate) return false;
+    try {
+      return window.localStorage.getItem(WHATS_NEW_SEEN_KEY) === dbCurrentRunDate;
+    } catch (e) { return false; }
+  }
+  function markWhatsNewSeen(){
+    if (!dbCurrentRunDate) return;
+    try { window.localStorage.setItem(WHATS_NEW_SEEN_KEY, dbCurrentRunDate); } catch (e) { /* ignore */ }
+  }
+
   function applyWhatsNewButtonUI(){
     const available = newListingUrls !== null;
+    // Only glow when this run genuinely brought something: `available` just
+    // means two runs were loaded, and an identical week has an EMPTY set.
+    const hasUnseenNew = available && newListingUrls.size > 0
+      && !state.showWhatsNew && !whatsNewSeenForCurrentRun();
     whatsNewBtn.disabled = !available;
     whatsNewBtn.classList.toggle('active', state.showWhatsNew);
+    whatsNewBtn.classList.toggle('has-new', hasUnseenNew);
     whatsNewBtn.textContent = state.showWhatsNew ? 'Back to all listings' : "See what's new";
     whatsNewBtn.title = available
-      ? ''
+      ? (hasUnseenNew ? newListingUrls.size + ' new listings since ' + dbPreviousRunDate : '')
       : 'Load a database file (.db) with at least two weekly runs recorded to compare against';
   }
   whatsNewBtn.addEventListener('click', () => {
     if (newListingUrls === null) return; // disabled, but guard anyway
+    markWhatsNewSeen(); // the glow is done for this run either way
     state.showWhatsNew = !state.showWhatsNew;
     applyWhatsNewButtonUI();
     render();
@@ -2966,10 +3310,11 @@
     n += state.types.length ? 1 : 0;
     n += state.flavorCategories.length ? 1 : 0;
     n += state.formFactors.length ? 1 : 0;
+    n += (state.accessoryGroups.length || state.accessorySubs.length) ? 1 : 0;
     n += (state.yearMode === 'range')
       ? ((state.yearFrom !== null || state.yearTo !== null) ? 1 : 0)
       : (state.year !== 'all' ? 1 : 0);
-    n += (state.gramsFrom || state.gramsTo !== null) ? 1 : 0;
+    n += ((state.gramsFrom !== null && state.gramsFrom > 0) || state.gramsTo !== null) ? 1 : 0;
     n += (state.priceFrom !== null || state.priceTo !== null) ? 1 : 0;
     n += state.stock !== 'in' ? 1 : 0;
     n += state.tylersPickOnly ? 1 : 0;
@@ -2988,11 +3333,13 @@
     state.sites = []; state.types = []; state.year = 'all'; state.stock = 'in'; state.tylersPickOnly = false;
     state.flavorCategories = [];
     state.formFactors = [];
+    state.accessoryGroups = [];
+    state.accessorySubs = [];
     state.vizXAxis = 'price';
     state.sortField = 'price'; state.sortDir = 'asc';
     state.yearMode = 'single'; state.yearFrom = null; state.yearTo = null;
     state.showAll = false;
-    state.gramsFrom = 0;
+    state.gramsFrom = null;
     // Reset lands on the same blank/uncapped default as first load.
     state.gramsTo = null;
     state.priceFrom = null; state.priceTo = null;
@@ -3002,10 +3349,11 @@
     renderTypeMenu();
     renderFlavorMenu();
     renderFormFactorMenu();
+    renderAccessoryMenu();
     document.getElementById('yearSelect').value = 'all';
     document.getElementById('yearFromInput').value = '';
     document.getElementById('yearToInput').value = '';
-    document.getElementById('gramsFromInput').value = '0';
+    document.getElementById('gramsFromInput').value = '';
     document.getElementById('gramsToInput').value = '';
     document.getElementById('priceFromInput').value = '';
     document.getElementById('priceToInput').value = '';
@@ -3031,6 +3379,16 @@
       if (state.dataset === 'accessories' && !isAccessory) return false;
 
       if (state.sites.length > 0 && !state.sites.includes(r.site)) return false;
+      // Accessories "Category": a row passes if its whole category is ticked
+      // OR its own sub-category is. Both lists empty means no restriction.
+      if (state.dataset === 'accessories'
+          && (state.accessoryGroups.length > 0 || state.accessorySubs.length > 0)){
+        const groupPicked = state.accessoryGroups.includes(r.category);
+        const sub = accessorySubcategory(r);
+        const subPicked = sub !== null
+          && state.accessorySubs.includes(accessorySubKey(r.category, sub));
+        if (!groupPicked && !subPicked) return false;
+      }
       // "See what's new": product_url absent from the previous run (same
       // logic as get_new_listings() in tea_db.py).
       if (state.showWhatsNew && (!newListingUrls || !newListingUrls.has(r.product_url))) return false;
@@ -3052,8 +3410,15 @@
         } else if (state.year !== 'all' && String(r.year) !== state.year) {
           return false;
         }
-        // No parsed weight can't match a bound, so the row is excluded.
-        if (state.gramsFrom !== null && (r.weight_grams === null || r.weight_grams < state.gramsFrom)) return false;
+        // No parsed weight can't match a bound, so the row is excluded - but
+        // a MINIMUM of 0 is not a real bound ("at least nothing" excludes
+        // nothing), and treating it as one hid every listing whose weight the
+        // scraper couldn't parse. Those are real teas, often the only ones a
+        // form factor has: Jesse's tea resins sell as "1 Tin (20 Tea Resins)"
+        // and state no grams at all, so a 0 in the Min box emptied the Tea
+        // Resin view of everything but Yunnan Sourcing's kilogram bags.
+        if (state.gramsFrom !== null && state.gramsFrom > 0 &&
+            (r.weight_grams === null || r.weight_grams < state.gramsFrom)) return false;
         if (state.gramsTo !== null && (r.weight_grams === null || r.weight_grams > state.gramsTo)) return false;
       }
       // Price range. Deliberately OUTSIDE the tea-only block (unlike
@@ -3904,6 +4269,13 @@
       if (params.teaTypes.length && !params.teaTypes.includes(r.category)) return false;
       if (params.sites.length && !params.sites.includes(r.site)) return false;
       if (params.formFactors.length && !params.formFactors.includes(r.form_factor)) return false;
+      // Tasting notes: a tea qualifies if ANY of its notes is in a checked
+      // flavor, same rule as the sidebar's Flavor Profile filter. A tea with
+      // no notes at all can never match once the filter is on.
+      if (params.flavorCategories.length){
+        const noteCats = noteEntriesForRow(r).map(e => e.category);
+        if (!noteCats.some(c => params.flavorCategories.includes(c))) return false;
+      }
       if (params.gramsMin !== null && (r.weight_grams === null || r.weight_grams < params.gramsMin)) return false;
       if (params.gramsMax !== null && (r.weight_grams === null || r.weight_grams > params.gramsMax)) return false;
       // A by-the-gram listing's weight_grams is always 1; its real amount
@@ -4181,9 +4553,15 @@
   }
 
   // ---- Modal UI: checkbox multi-selects ----
-  const cartSelection = { teaTypes: [], sites: [], formFactors: [] };
+  const cartSelection = { teaTypes: [], sites: [], formFactors: [], flavorCategories: [] };
 
-  function cartCheckboxOption(box, value, label, selectionArr){
+  // Two optional leading marks, mirroring the sidebar's own menus so the same
+  // thing looks the same in both places: `siteNameForIcon` puts the shop's
+  // logo before the label (faviconEl(), as used by the Website menu and every
+  // listing row), and `flavorForSwatch` puts that flavor's color dot there
+  // (.flavor-swatch-dot, as used by the Flavor Profile menu). The tea-type and
+  // form-factor boxes pass neither.
+  function cartCheckboxOption(box, value, label, selectionArr, siteNameForIcon, flavorForSwatch){
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'cart-checkbox-option';
@@ -4192,6 +4570,13 @@
     checkbox.className = 'type-checkbox' + (checked ? ' checked' : '');
     checkbox.textContent = checked ? '✓' : '';
     btn.appendChild(checkbox);
+    if (siteNameForIcon) btn.appendChild(faviconEl(siteNameForIcon));
+    if (flavorForSwatch){
+      const swatch = document.createElement('span');
+      swatch.className = 'flavor-swatch-dot';
+      swatch.style.background = flavorCategoryColor(flavorForSwatch);
+      btn.appendChild(swatch);
+    }
     const span = document.createElement('span');
     span.textContent = label;
     btn.appendChild(span);
@@ -4212,24 +4597,34 @@
     const types = [...new Set(teaRows.map(r => r.category))].sort();
     const sites = [...new Set(teaRows.map(r => r.site))].sort();
     const formFactors = [...new Set(teaRows.map(r => r.form_factor).filter(Boolean))].sort();
+    // Only the flavors actually present in the loaded data, so the box isn't a
+    // list of categories that can only ever return nothing.
+    const presentFlavors = new Set();
+    teaRows.forEach(r => noteEntriesForRow(r).forEach(e => presentFlavors.add(e.category)));
+    const flavors = ALL_FLAVOR_CATEGORIES.filter(c => presentFlavors.has(c));
 
     cartSelection.teaTypes = cartSelection.teaTypes.filter(t => types.includes(t));
     cartSelection.sites = cartSelection.sites.filter(s => sites.includes(s));
     cartSelection.formFactors = cartSelection.formFactors.filter(f => formFactors.includes(f));
+    cartSelection.flavorCategories = cartSelection.flavorCategories.filter(c => flavors.includes(c));
 
     const typeBox = document.getElementById('cartTypeBox');
     const siteBox = document.getElementById('cartSiteBox');
     const formBox = document.getElementById('cartFormFactorBox');
-    typeBox.innerHTML = ''; siteBox.innerHTML = ''; formBox.innerHTML = '';
+    const flavorBox = document.getElementById('cartFlavorBox');
+    typeBox.innerHTML = ''; siteBox.innerHTML = ''; formBox.innerHTML = ''; flavorBox.innerHTML = '';
 
     if (types.length === 0) typeBox.innerHTML = '<div class="cart-empty-note">No tea data loaded yet.</div>';
     else types.forEach(t => cartCheckboxOption(typeBox, t, t, cartSelection.teaTypes));
 
     if (sites.length === 0) siteBox.innerHTML = '<div class="cart-empty-note">No tea data loaded yet.</div>';
-    else sites.forEach(s => cartCheckboxOption(siteBox, s, s, cartSelection.sites));
+    else sites.forEach(s => cartCheckboxOption(siteBox, s, s, cartSelection.sites, s));
 
     if (formFactors.length === 0) formBox.innerHTML = '<div class="cart-empty-note">No tea data loaded yet.</div>';
     else formFactors.forEach(f => cartCheckboxOption(formBox, f, f, cartSelection.formFactors));
+
+    if (flavors.length === 0) flavorBox.innerHTML = '<div class="cart-empty-note">No tasting notes in the loaded data.</div>';
+    else flavors.forEach(c => cartCheckboxOption(flavorBox, c, c, cartSelection.flavorCategories, null, c));
   }
 
   // ---- Modal UI: reading + validating params ----
@@ -4243,6 +4638,7 @@
       teaTypes: [...cartSelection.teaTypes],
       sites: [...cartSelection.sites],
       formFactors: [...cartSelection.formFactors],
+      flavorCategories: [...cartSelection.flavorCategories],
       budget: cartFieldNumOrNull('cartBudgetInput'),
       gramsMin: cartFieldNumOrNull('cartGramsMinInput'),
       gramsMax: cartFieldNumOrNull('cartGramsMaxInput'),
@@ -4330,13 +4726,21 @@
     btn.type = 'button';
     btn.className = 'cart-checkout-btn';
 
-    // Data written before variant_id was tracked has nothing to build a
-    // permalink from - disable rather than open a broken cart URL.
+    // No variant_id means no permalink to build - disable rather than open a
+    // broken cart URL. Two different reasons, and the button says which:
+    // a shop that isn't on Shopify has no /cart/{id}:{qty} URL to open at all
+    // (nothing to reload will change that), while an older file simply predates
+    // variant_id being recorded.
     const missingIds = opt.items.some(r => !r.variant_id);
     if (missingIds){
       btn.disabled = true;
-      btn.textContent = 'Check Out (reload data to enable)';
-      btn.title = 'This data was loaded from a file written before product IDs were tracked - load a CSV or database from the latest tracker run to enable checkout links.';
+      if (NON_SHOPIFY_SITES.has(opt.site)){
+        btn.textContent = `Open ${opt.site}`;
+        btn.title = `${opt.site} isn't a Shopify store, so there's no one-click cart link to build. Use each listing's own link above to add these to your basket there.`;
+      } else {
+        btn.textContent = 'Check Out (reload data to enable)';
+        btn.title = 'This data was loaded from a file written before product IDs were tracked - load a CSV or database from the latest tracker run to enable checkout links.';
+      }
     } else {
       btn.textContent = `Check Out on ${opt.site}`;
       btn.addEventListener('click', () => {
