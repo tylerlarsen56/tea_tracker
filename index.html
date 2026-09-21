@@ -227,6 +227,14 @@
     white-space:nowrap;
   }
   .header-btn:hover{ border-color:var(--amber); color:var(--amber); }
+  /* "Make me a cart" - outlined in gold, the one header action that does
+     something with the data rather than opening a form. */
+  .header-btn-accent{
+    color:var(--amber);
+    border:1.5px solid var(--amber);
+    font-weight:600;
+  }
+  .header-btn-accent:hover{ background:rgba(209,160,82,0.10); }
 
   main.layout{
     flex:1;
@@ -1177,20 +1185,9 @@
      "Make me a cart" feature.
      ===================================================================== */
 
-  /* Sidebar trigger - "outlined in gold", distinct from .btn-primary and .visualize-btn. */
-  .cart-btn{
-    width:100%;
-    background:transparent;
-    color:var(--amber);
-    border:1.5px solid var(--amber);
-    padding:10px 14px;
-    font-size:13.5px;
-    font-weight:600;
-    font-family:inherit;
-    border-radius:3px;
-    cursor:pointer;
-  }
-  .cart-btn:hover{ background:rgba(209,160,82,0.10); }
+  /* The trigger itself is a .header-btn up in the header (see
+     .header-btn-accent) - it moved out of the sidebar so the collapsed phone
+     layout keeps it reachable. */
 
   /* ---- Modal shell ---- */
   .cart-modal-overlay{
@@ -1594,7 +1591,7 @@
     .sort-btn,
     .site-dropdown-btn,
     .visualize-btn,
-    .cart-btn,
+    .header-btn,
     .cart-checkout-btn{ min-height:44px; }
     .viz-donut-row{ gap:18px; }
     .site-option,
@@ -1642,8 +1639,10 @@
       <label class="btn-primary" for="dbInput">Load Database</label>
       <input type="file" id="dbInput" accept=".db">
       <!-- Deliberately in the header, NOT in aside.filters: on a phone the
-           sidebar collapses behind #filtersToggle, and these two have nothing
-           to do with filtering. See #subscribeModalOverlay / #contactModalOverlay. -->
+           sidebar collapses behind #filtersToggle, and none of these three
+           are filters. See #cartModalOverlay / #subscribeModalOverlay /
+           #contactModalOverlay. -->
+      <button type="button" class="header-btn header-btn-accent" id="makeCartBtn">Make me a cart</button>
       <button type="button" class="header-btn" id="subscribeBtn">Join the Email List</button>
       <button type="button" class="header-btn" id="contactBtn">Contact</button>
     </div>
@@ -1829,11 +1828,6 @@
 
       <div class="filter-group">
         <button type="button" class="visualize-btn" id="whatsNewBtn" disabled>See what's new</button>
-      </div>
-
-      <!-- Opens the "Make me a cart" modal - see #cartModalOverlay below. -->
-      <div class="filter-group">
-        <button type="button" class="cart-btn" id="makeCartBtn">Make me a cart</button>
       </div>
 
       <button type="button" class="reset-link" id="resetBtn">Reset all filters</button>
@@ -3964,7 +3958,9 @@
     // Accessories fall back to plain price, as the sort control does.
     return isAccessory
       ? { key: 'price_usd', label: 'price', title: 'Price distribution', fmt: v => '$' + v.toFixed(2) }
-      : { key: 'price_per_gram', label: 'price per gram', title: 'Price-per-gram distribution', fmt: v => '$' + v.toFixed(4) + '/g' };
+      // 2dp, not the 4dp the listing cards use: these figures sit in fixed
+      // stat boxes that a phone can't widen, and "$0.1359/g" overflowed them.
+      : { key: 'price_per_gram', label: 'price per gram', title: 'Price-per-gram distribution', fmt: v => '$' + v.toFixed(2) + '/g' };
   }
 
   // -------------------------------------------------------------------
@@ -4008,8 +4004,16 @@
 
   // Counts every note on every row, by category. Returns the tallied
   // categories (most common first) plus the totals the caption needs.
+  //
+  // Two different counts come out of this, and they answer different
+  // questions: totalNotes is every note on every listing (what the slices are
+  // proportional to), while uniqueTerms is how many DISTINCT tasting words
+  // appear at all - "honey" on four hundred listings is one of those. The
+  // ring's centre shows the second, since "how varied is this selection" is
+  // the thing a total can't tell you.
   function tallyNoteCategories(rows){
     const counts = new Map();
+    const terms = new Set();
     let totalNotes = 0;
     let rowsWithNotes = 0;
     rows.forEach(r => {
@@ -4018,25 +4022,26 @@
       rowsWithNotes++;
       entries.forEach(e => {
         counts.set(e.category, (counts.get(e.category) || 0) + 1);
+        terms.add(String(e.term).trim().toLowerCase());
         totalNotes++;
       });
     });
     const ordered = [...counts.entries()]
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([category, count]) => ({ category, count }));
-    return { ordered, totalNotes, rowsWithNotes };
+    return { ordered, totalNotes, uniqueNotes: terms.size, rowsWithNotes };
   }
 
   function buildNoteDonut(filtered, wrap){
-    const { ordered, totalNotes, rowsWithNotes } = tallyNoteCategories(filtered);
+    const { ordered, totalNotes, uniqueNotes, rowsWithNotes } = tallyNoteCategories(filtered);
 
     const sub = document.createElement('div');
     sub.className = 'viz-sub';
     sub.textContent = totalNotes === 0
       ? 'None of the currently filtered listings have tasting notes.'
       : ('Across ' + totalNotes + ' tasting note' + (totalNotes === 1 ? '' : 's') +
-         ' on ' + rowsWithNotes + ' of ' + filtered.length + ' matching listing' +
-         (filtered.length === 1 ? '' : 's'));
+         ' (' + uniqueNotes + ' unique) on ' + rowsWithNotes + ' of ' + filtered.length +
+         ' matching listing' + (filtered.length === 1 ? '' : 's'));
     wrap.appendChild(sub);
 
     if (totalNotes === 0){
@@ -4076,8 +4081,8 @@
       '<svg viewBox="0 0 ' + DONUT_SIZE + ' ' + DONUT_SIZE + '" xmlns="http://www.w3.org/2000/svg" role="img" ' +
       'aria-label="Tasting notes by flavor category. Full figures are listed beside the chart.">' +
       slices +
-      '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" class="viz-donut-center-value">' + totalNotes + '</text>' +
-      '<text x="' + cx + '" y="' + (cy + 14) + '" text-anchor="middle" class="viz-donut-center-label">notes</text>' +
+      '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" class="viz-donut-center-value">' + uniqueNotes + '</text>' +
+      '<text x="' + cx + '" y="' + (cy + 14) + '" text-anchor="middle" class="viz-donut-center-label">unique notes</text>' +
       '</svg>';
     row.appendChild(donut);
 
@@ -4151,10 +4156,17 @@
 
       // Only meaningful for the dot plot, so it steps aside in donut mode.
       if (!showNotes){
+        // Like the chart toggle below: labelled with the axis it switches TO,
+        // not the one in use. Which one IS in use stays readable off the
+        // panel heading ("Price-per-gram distribution" / "Vintage year
+        // distribution") right beside it.
         const xAxisBtn = document.createElement('button');
         xAxisBtn.type = 'button';
         xAxisBtn.className = 'viz-xaxis-toggle';
-        xAxisBtn.textContent = 'X-axis: ' + (xMode === 'vintage' ? 'Vintage year' : 'Price per gram');
+        xAxisBtn.textContent = 'X-axis: ' + (xMode === 'vintage' ? 'Price per gram' : 'Vintage year');
+        xAxisBtn.title = xMode === 'vintage'
+          ? 'Switch the x-axis to price per gram'
+          : 'Switch the x-axis to vintage year';
         xAxisBtn.addEventListener('click', () => {
           state.vizXAxis = xMode === 'vintage' ? 'price' : 'vintage';
           render();
@@ -4162,11 +4174,16 @@
         toggles.appendChild(xAxisBtn);
       }
 
+      // Labelled with the chart it takes you TO, not the one you're looking
+      // at - you tap the thing you want. That also means it is an action, not
+      // a state, so no .active / aria-pressed: those would now read backwards.
       const chartBtn = document.createElement('button');
       chartBtn.type = 'button';
-      chartBtn.className = 'viz-xaxis-toggle' + (showNotes ? ' active' : '');
-      chartBtn.setAttribute('aria-pressed', String(showNotes));
-      chartBtn.textContent = showNotes ? 'Chart: Tasting notes' : 'Chart: Distribution';
+      chartBtn.className = 'viz-xaxis-toggle';
+      chartBtn.textContent = showNotes ? 'Chart: Distribution' : 'Chart: Tasting notes';
+      chartBtn.title = showNotes
+        ? 'Switch to the price distribution chart'
+        : 'Switch to the tasting-note chart';
       chartBtn.addEventListener('click', () => {
         state.vizChart = showNotes ? 'distribution' : 'notes';
         render();
