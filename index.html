@@ -846,11 +846,16 @@
     border-color:var(--amber);
     color:var(--amber);
   }
-  .visualize-btn:disabled{
+  /* "See what's new" starts disabled - it needs two runs in the database
+     before there is anything to compare - so .header-btn needs the same
+     muted treatment the sidebar version had. */
+  .visualize-btn:disabled,
+  .header-btn:disabled{
     opacity:0.4;
     cursor:not-allowed;
   }
-  .visualize-btn:disabled:hover{
+  .visualize-btn:disabled:hover,
+  .header-btn:disabled:hover{
     border-color:var(--line);
     color:var(--ink);
   }
@@ -860,12 +865,14 @@
      hasn't been clicked for that run yet (see applyWhatsNewButtonUI). Silver
      rather than the usual amber so it reads as "unread", not "active" - the
      amber .active state is what the button looks like once the filter is on. */
-  .visualize-btn.has-new{
+  .visualize-btn.has-new,
+  .header-btn.has-new{
     border-color:var(--silver-glow);
     color:var(--silver-glow-ink);
     animation:new-listings-glow 2.4s ease-in-out infinite;
   }
-  .visualize-btn.has-new:hover{
+  .visualize-btn.has-new:hover,
+  .header-btn.has-new:hover{
     border-color:var(--amber);
     color:var(--amber);
   }
@@ -876,7 +883,8 @@
   /* A pulsing outline is decoration, not information - the button's own label
      and the badge next to it still say there's something new. */
   @media (prefers-reduced-motion: reduce){
-    .visualize-btn.has-new{
+    .visualize-btn.has-new,
+    .header-btn.has-new{
       animation:none;
       box-shadow:0 0 0 2px rgba(214,221,230,0.16), 0 0 10px 1px rgba(214,221,230,0.35);
     }
@@ -1700,8 +1708,9 @@
            sidebar collapses behind #filtersToggle, and none of these three
            are filters. See #cartModalOverlay / #subscribeModalOverlay /
            #contactModalOverlay. -->
-      <button type="button" class="header-btn header-btn-accent" id="makeCartBtn">Make me a cart</button>
-      <button type="button" class="header-btn" id="visualizeBtn">Visualize Listings</button>
+      <button type="button" class="btn-primary" id="makeCartBtn">Make me a cart</button>
+      <button type="button" class="header-btn header-btn-accent" id="visualizeBtn">Visualize Listings</button>
+      <button type="button" class="header-btn" id="whatsNewBtn" disabled>See what's new</button>
       <button type="button" class="header-btn" id="subscribeBtn">Join the Email List</button>
       <button type="button" class="header-btn" id="contactBtn">Contact</button>
     </div>
@@ -1882,10 +1891,6 @@
             </button>
           </span>
         </div>
-      </div>
-
-      <div class="filter-group">
-        <button type="button" class="visualize-btn" id="whatsNewBtn" disabled>See what's new</button>
       </div>
 
       <button type="button" class="reset-link" id="resetBtn">Reset all filters</button>
