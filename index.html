@@ -1044,14 +1044,16 @@
     white-space:nowrap;
   }
 
-  /* "Show individual tasting notes": two more stat columns, each category's
+  /* "Show individual tasting notes": a median-price column, each category's
      notes nested under it, and a couple of hundred rows - so the list
      scrolls inside its own box (both ways on a phone) with the column
-     headings pinned. */
+     headings pinned. Every column is a FIXED width and left-aligned, so a
+     column's position never shifts with how long the note names happen to
+     be in the current selection. */
   .viz-note-table-detailed{
     flex:1 1 440px;
     max-width:760px;
-    grid-template-columns:auto minmax(50px, 1fr) auto auto auto;
+    grid-template-columns:150px minmax(50px, 1fr) 52px 52px 64px;
     gap:4px 12px;
     max-height:560px;
     overflow:auto;
@@ -1073,7 +1075,7 @@
     /* Covers the row gap under the pinned headings too. */
     box-shadow:0 4px 0 var(--surface);
   }
-  .viz-note-head-num, .viz-note-extra{ text-align:right; }
+  .viz-note-table-detailed .viz-note-name{ white-space:normal; line-height:1.25; min-width:0; }
   .viz-note-name-cat{
     color:var(--ink);
     font-weight:600;
@@ -1084,24 +1086,34 @@
     padding-left:18px;
     font-size:12px;
   }
-  /* A phone can't fit the bars AND three stat columns - the numbers win. */
+  /* A phone can't fit the bars AND the stat columns - the numbers win. */
   @media (max-width: 640px){
+    /* Names take whatever the two fixed stat columns leave, wrapping onto
+       a second line rather than being cut off. */
     .viz-note-table-detailed{
-      grid-template-columns:auto auto auto auto;
+      grid-template-columns:minmax(0, 1fr) 42px 46px 56px;
       flex-basis:100%;
       min-width:0;
       max-height:480px;
+      gap:4px 9px;
+      padding-right:0;
     }
     .viz-note-table-detailed .viz-note-bar,
     .viz-note-table-detailed .viz-note-head-bar{ display:none; }
     .viz-note-name-sub{ padding-left:12px; }
-    .viz-note-table-detailed{ gap:4px 9px; padding-right:0; }
-    .viz-note-table-detailed{ grid-template-columns:minmax(0, 1fr) auto auto auto; }
-    .viz-note-table-detailed .viz-note-head{ white-space:normal; line-height:1.3; align-self:end; }
-    .viz-note-table-detailed .viz-note-head-num{ width:min-content; justify-self:end; }
-    .viz-note-table-detailed .viz-note-name{ min-width:0; }
-    .viz-note-table-detailed .viz-note-name span:last-child{ overflow:hidden; text-overflow:ellipsis; }
     .viz-note-table-detailed .viz-note-count{ font-size:10.5px; }
+    /* Last resort for a word longer than the column: break it rather than
+       let it run into the numbers. */
+    .viz-note-table-detailed .viz-note-name span:last-child{ overflow-wrap:anywhere; }
+  }
+  /* The narrowest phones (iPhone SE and the like): tighten everything a
+     notch so single-word names ("Chrysanthemum") still fit whole. */
+  @media (max-width: 380px){
+    .viz-note-table-detailed{ grid-template-columns:minmax(0, 1fr) 34px 36px 46px; gap:4px 6px; }
+    .viz-note-table-detailed .viz-note-count{ font-size:9.5px; }
+    .viz-note-table-detailed .viz-note-head{ font-size:9px; letter-spacing:0.05em; }
+    .viz-note-table-detailed .viz-note-name{ gap:5px; font-size:11.5px; }
+    .viz-note-table-detailed .viz-note-name-sub{ padding-left:6px; }
   }
 
   /* ---------- "Contact" feedback modal ---------- */
@@ -4703,11 +4715,12 @@
       bar.appendChild(fill);
     }
 
-    // Detailed mode adds two columns, so it gets column headings.
+    // Detailed mode adds a column, so it gets column headings.
     if (showNotes){
-      ['', '', 'Notes\u00a0· share', 'Of category', 'Median price'].forEach((h, i) => {
+      ['', '', 'Notes', 'Share', 'Price/g'].forEach((h, i) => {
         const hd = cell('viz-note-head' + (i >= 2 ? ' viz-note-head-num' : '') + (i === 1 ? ' viz-note-head-bar' : ''), h);
-        if (i === 3) hd.title = "Share of the category's notes";
+        if (i === 2) hd.title = 'How many times the note appears';
+        if (i === 3) hd.title = 'Share of all tasting notes';
         if (i === 4) hd.title = 'Median price per gram of the listings with this note';
       });
     }
@@ -4726,10 +4739,16 @@
       name.appendChild(label);
 
       barCell(count / maxCount, flavorCategoryColor(category));
-      cell('viz-note-count', count + '  ·  ' + pct.toFixed(1) + '%');
+      // Detailed mode gives the count and the share a column each, so both
+      // line up down the list; the plain list keeps them in one cell.
+      if (showNotes){
+        cell('viz-note-count', String(count));
+        cell('viz-note-count', pct.toFixed(1) + '%');
+      } else {
+        cell('viz-note-count', count + '  ·  ' + pct.toFixed(1) + '%');
+      }
 
       if (!showNotes) return;
-      cell('viz-note-count viz-note-extra', '');
       cell('viz-note-count viz-note-extra', fmtPpg(medianPpg));
       for (let i = firstCatCell; i < table.children.length; i++){
         table.children[i].classList.add('viz-note-cat-cell');
@@ -4748,9 +4767,8 @@
         nName.title = noteLabel(n.key) + ' - on ' + n.listings + ' listing' + (n.listings === 1 ? '' : 's');
 
         barCell(n.count / maxNoteCount, color);
-        cell('viz-note-count', n.count + '  ·  ' + (n.count / totalNotes * 100).toFixed(1) + '%');
-        const ofCat = n.count / count * 100;
-        cell('viz-note-count viz-note-extra', ofCat.toFixed(ofCat < 10 ? 1 : 0) + '%');
+        cell('viz-note-count', String(n.count));
+        cell('viz-note-count', (n.count / totalNotes * 100).toFixed(1) + '%');
         cell('viz-note-count viz-note-extra', fmtPpg(n.medianPpg));
       });
     });
