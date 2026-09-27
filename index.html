@@ -737,9 +737,9 @@
   .dataset-btn.active .count{ color:var(--amber); opacity:0.8; }
 
   #teaOnlyFilters[hidden]{ display:none; }
-  #sortGramsWrap{ flex:1; }
-  #sortGramsWrap .sort-btn{ width:100%; }
-  #sortGramsWrap[hidden]{ display:none; }
+  #sortGramsWrap, #sortYearWrap{ flex:1; }
+  #sortGramsWrap .sort-btn, #sortYearWrap .sort-btn{ width:100%; }
+  #sortGramsWrap[hidden], #sortYearWrap[hidden]{ display:none; }
   .year-badge{
     font-size:11px;
     color:var(--ink-faint);
@@ -1232,6 +1232,117 @@
   }
   .viz-chart-wrap{ width:100%; }
   .viz-chart-wrap svg{ width:100%; height:auto; display:block; overflow:visible; }
+
+  /* ---------- Dot-plot range slider ----------
+     Two <input type=range> stacked on one drawn track. The inputs' own tracks
+     are invisible and ignore the pointer; only their thumbs take it, so each
+     handle can be grabbed wherever it sits. */
+  .viz-range{
+    --thumb:16px;
+    margin-top:14px;
+  }
+  .viz-range-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:2px;
+  }
+  .viz-range-title{
+    font-size:10.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+  .viz-range-reset{
+    background:none;
+    border:none;
+    padding:2px 0;
+    font:inherit;
+    font-size:12px;
+    color:var(--amber);
+    text-decoration:underline;
+    text-underline-offset:2px;
+    cursor:pointer;
+  }
+  .viz-range-reset[hidden]{ display:none; }
+  .viz-range-track{
+    position:relative;
+    height:28px;
+  }
+  /* The rail, drawn once behind both inputs. */
+  .viz-range-track::before{
+    content:"";
+    position:absolute;
+    left:calc(var(--thumb) / 2);
+    right:calc(var(--thumb) / 2);
+    top:50%;
+    height:4px;
+    margin-top:-2px;
+    border-radius:2px;
+    background:var(--line);
+  }
+  .viz-range-fill{
+    position:absolute;
+    top:50%;
+    height:4px;
+    margin-top:-2px;
+    border-radius:2px;
+    background:var(--amber);
+  }
+  .viz-range-input{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    margin:0;
+    background:none;
+    pointer-events:none;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  .viz-range-input:focus{ outline:none; }
+  .viz-range-input::-webkit-slider-runnable-track{ background:none; border:none; height:100%; }
+  .viz-range-input::-moz-range-track{ background:none; border:none; }
+  .viz-range-input::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    pointer-events:auto;
+    width:var(--thumb);
+    height:var(--thumb);
+    margin-top:calc((28px - var(--thumb)) / 2);
+    border-radius:50%;
+    background:var(--amber);
+    border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--amber);
+    cursor:grab;
+  }
+  .viz-range-input::-moz-range-thumb{
+    pointer-events:auto;
+    width:var(--thumb);
+    height:var(--thumb);
+    border-radius:50%;
+    background:var(--amber);
+    border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--amber);
+    cursor:grab;
+  }
+  .viz-range-input:active::-webkit-slider-thumb{ cursor:grabbing; }
+  .viz-range-input:focus-visible::-webkit-slider-thumb{ box-shadow:0 0 0 3px rgba(209,160,82,0.45); }
+  .viz-range-input:focus-visible::-moz-range-thumb{ box-shadow:0 0 0 3px rgba(209,160,82,0.45); }
+  .viz-range-values{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--font-mono, 'IBM Plex Mono', monospace);
+    font-size:11.5px;
+    color:var(--ink-dim);
+  }
+  /* Bigger handles for fingers. */
+  @media (max-width: 820px){
+    .viz-range{ --thumb:24px; }
+    .viz-range-track{ height:36px; }
+    .viz-range-input::-webkit-slider-thumb{ margin-top:calc((36px - var(--thumb)) / 2); }
+  }
   .viz-legend{
     display:flex;
     flex-wrap:wrap;
@@ -2003,6 +2114,13 @@
               Grams <span class="arrow" id="sortGramsArrow">↑</span>
             </button>
           </span>
+          <!-- Vintage year: ↑ = oldest first, ↓ = newest first. Tea only, like
+               Grams - a teapot has no vintage. -->
+          <span id="sortYearWrap">
+            <button type="button" class="sort-btn" id="sortYearBtn" data-field="year" title="Sort by vintage year: oldest first">
+              Year <span class="arrow" id="sortYearArrow">↑</span>
+            </button>
+          </span>
         </div>
       </div>
 
@@ -2396,7 +2514,7 @@
     yearTo: null,        // inclusive upper bound, or null
     stock: 'in',        // 'any' | 'in' | 'out'
     tylersPickOnly: false, // plain on/off - see isTylersPick()
-    sortField: 'price',  // 'price' | 'grams' (tea dataset only - accessories always sort by price_usd)
+    sortField: 'price',  // 'price' | 'grams' | 'year' (grams/year are tea only - accessories always sort by price_usd)
     sortDir: 'asc',       // 'asc' | 'desc'
     showAll: false,      // false = top 10 only, true = every match
     gramsFrom: null,     // inclusive lower bound on weight_grams, or null
@@ -2423,6 +2541,9 @@
     vizXAxis: 'price',    // 'price' | 'vintage' dot-plot; forced to 'price' for accessories
     vizChart: 'distribution', // 'distribution' (dot plot) | 'notes' (tasting-note donut)
     vizShowNotes: false,  // donut: "Show individual tasting notes" (outer ring + per-note rows)
+    // Dot-plot range slider, per axis key ('price_per_gram' | 'year' |
+    // 'price_usd'): { lo, hi }, each null = that end left at the data's edge.
+    vizLimits: {},
     priceFrom: null,     // inclusive lower bound on price_usd, or null
     priceTo: null,       // inclusive upper bound on price_usd, or null
     showVisualize: false, // is the Visualize Listings panel open
@@ -4022,11 +4143,12 @@
     document.getElementById('teaOnlyFilters').hidden = (value === 'accessories');
     document.getElementById('accessoryOnlyFilters').hidden = (value === 'tea');
     document.getElementById('sortGramsWrap').hidden = (value === 'accessories');
+    document.getElementById('sortYearWrap').hidden = (value === 'accessories');
     document.getElementById('sortFieldLabel').textContent =
       value === 'accessories' ? 'Sort by' : 'Sort by (one at a time)';
     // "Grams" isn't a valid sort for accessories - fall back to Price so
     // there's always a sensible active sort field.
-    if (value === 'accessories' && state.sortField === 'grams'){
+    if (value === 'accessories' && (state.sortField === 'grams' || state.sortField === 'year')){
       state.sortField = 'price';
       applySortButtonUI();
     }
@@ -4198,6 +4320,7 @@
   // -------------------------------------------------------------------
   const sortPriceBtn = document.getElementById('sortPriceBtn');
   const sortGramsBtn = document.getElementById('sortGramsBtn');
+  const sortYearBtn = document.getElementById('sortYearBtn');
   function handleSortClick(field){
     if (state.sortField === field){
       state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
@@ -4210,11 +4333,19 @@
   }
   sortPriceBtn.addEventListener('click', () => handleSortClick('price'));
   sortGramsBtn.addEventListener('click', () => handleSortClick('grams'));
+  sortYearBtn.addEventListener('click', () => handleSortClick('year'));
   function applySortButtonUI(){
     sortPriceBtn.classList.toggle('active', state.sortField === 'price');
     sortGramsBtn.classList.toggle('active', state.sortField === 'grams');
+    sortYearBtn.classList.toggle('active', state.sortField === 'year');
     document.getElementById('sortPriceArrow').textContent = (state.sortField === 'price' && state.sortDir === 'desc') ? '↓' : '↑';
     document.getElementById('sortGramsArrow').textContent = (state.sortField === 'grams' && state.sortDir === 'desc') ? '↓' : '↑';
+    const yearDesc = state.sortField === 'year' && state.sortDir === 'desc';
+    document.getElementById('sortYearArrow').textContent = yearDesc ? '↓' : '↑';
+    // Which way a year sorts isn't obvious from an arrow alone.
+    sortYearBtn.title = state.sortField !== 'year'
+      ? 'Sort by vintage year: oldest first'
+      : (yearDesc ? 'Newest first - click for oldest first' : 'Oldest first - click for newest first');
   }
 
   // -------------------------------------------------------------------
@@ -4322,6 +4453,7 @@
     state.flavorNotes = [];
     state.flavorAdvanced = false;
     state.vizShowNotes = false;
+    state.vizLimits = {};
     state.formFactors = [];
     state.accessoryGroups = [];
     state.accessorySubs = [];
@@ -4424,15 +4556,23 @@
     // mean nothing for a teapot.
     const key = state.dataset === 'accessories'
       ? 'price_usd'
-      : (state.sortField === 'price' ? 'price_per_gram' : 'weight_grams');
+      : ({ price: 'price_per_gram', grams: 'weight_grams', year: 'year' }[state.sortField] || 'price_per_gram');
 
     // Rows missing the sort field sink to the bottom in either direction.
+    // Year ties are common (a whole shelf of 2024 sheng), so within one year
+    // the cheapest per gram comes first.
     rows.sort((a, b) => {
       const av = a[key], bv = b[key];
       if (av === null && bv === null) return 0;
       if (av === null) return 1;
       if (bv === null) return -1;
-      return state.sortDir === 'asc' ? av - bv : bv - av;
+      const primary = state.sortDir === 'asc' ? av - bv : bv - av;
+      if (primary !== 0 || key !== 'year') return primary;
+      const ap = a.price_per_gram, bp = b.price_per_gram;
+      if (ap === null && bp === null) return 0;
+      if (ap === null) return 1;
+      if (bp === null) return -1;
+      return ap - bp;
     });
 
     return rows;
@@ -4879,14 +5019,11 @@
       return wrap;
     }
 
-    const sub = document.createElement('div');
-    sub.className = 'viz-sub';
-    sub.textContent = points.length === filtered.length
-      ? ('Across all ' + filtered.length + ' matching listing' + (filtered.length === 1 ? '' : 's'))
-      : ('Across ' + points.length + ' of ' + filtered.length + ' matching listings with a known ' + axis.label);
-    wrap.appendChild(sub);
-
     if (points.length === 0){
+      const sub = document.createElement('div');
+      sub.className = 'viz-sub';
+      sub.textContent = 'Across all ' + filtered.length + ' matching listing' + (filtered.length === 1 ? '' : 's');
+      wrap.appendChild(sub);
       const empty = document.createElement('div');
       empty.className = 'viz-empty';
       empty.textContent = 'None of the currently filtered listings have a known ' + axis.label + '.';
@@ -4894,117 +5031,296 @@
       return wrap;
     }
 
-    const values = points.map(p => p.v);
-    const stats = computeStats(values);
+    // ---- range slider ----
+    // Two handles under the chart narrow what the chart (and the stats above
+    // it) cover, without touching the listings themselves. The slider always
+    // spans the currently filtered data, and a handle left at its end means
+    // "no limit on this side", so a filter change that widens the data widens
+    // the chart with it. Limits are kept per axis in state.vizLimits.
+    let dataMin = Infinity, dataMax = -Infinity;
+    points.forEach(p => { if (p.v < dataMin) dataMin = p.v; if (p.v > dataMax) dataMax = p.v; });
+    const scale = vizRangeScale(dataMin, dataMax, xMode === 'vintage', axis.key !== 'year');
+    const limits = state.vizLimits[axis.key] || (state.vizLimits[axis.key] = { lo: null, hi: null });
 
-    const grid = document.createElement('div');
-    grid.className = 'viz-stats-grid';
-    const statDefs = [
-      ['Mean', fmt(stats.mean)],
-      ['Median', fmt(stats.median)],
-      ['Std dev', stats.n > 1 ? fmt(stats.stdev) : '—'],
-      ['Low', fmt(stats.min)],
-      ['High', fmt(stats.max)],
-      ['Listings', String(stats.n)],
-    ];
-    statDefs.forEach(([lbl, val]) => {
-      const card = document.createElement('div');
-      card.className = 'viz-stat';
-      card.innerHTML = '<div class="viz-stat-label">' + lbl + '</div><div class="viz-stat-value">' + val + '</div>';
-      grid.appendChild(card);
-    });
-    wrap.appendChild(grid);
+    const distTop = document.createElement('div');
+    const legendBox = document.createElement('div');
 
-    // ---- dot plot ----
-    // Axis bounds track the filtered min/max, not a fixed global range, so
-    // the chart always uses its full width.
-    let minV = stats.min, maxV = stats.max;
-    if (minV === maxV){
-      // A 10%-of-value pad suits a price but is absurd for a year (10% of
-      // 2015 is +/-200 years), so vintage mode pads by a flat 1 year.
-      const pad = xMode === 'vintage' ? 1 : (minV === 0 ? 1 : Math.abs(minV) * 0.1);
-      minV -= pad; maxV += pad;
-    }
-    const plotWidth = VIZ_WIDTH - VIZ_MARGIN.left - VIZ_MARGIN.right;
-    // Vintage year is discrete: one bin per year across the filtered range
-    // (capped at 60), rather than the sqrt-scaled count below, which was
-    // tuned for smoothly distributed price data.
-    const yearSpan = xMode === 'vintage' ? Math.round(maxV - minV) + 1 : null;
-    const numBins = (xMode === 'vintage' && yearSpan <= 60)
-      ? Math.max(1, yearSpan)
-      : Math.max(8, Math.min(56, Math.round(Math.sqrt(points.length) * 1.4)));
-    const binWidth = plotWidth / numBins;
-    const radius = Math.max(1.6, Math.min(4.5, binWidth / 2 - 0.6));
-    const bins = Array.from({ length: numBins }, () => []);
-    points.forEach(p => {
-      let idx = Math.floor((p.v - minV) / (maxV - minV) * numBins);
-      if (idx >= numBins) idx = numBins - 1;
-      if (idx < 0) idx = 0;
-      bins[idx].push(p);
-    });
-    const maxCount = Math.max(1, ...bins.map(b => b.length));
-    // Dots stack from the axis upward, edge-to-edge; spacing compresses
-    // only if the tallest bin would exceed VIZ_PLOT_MAX.
-    const naturalSpacing = radius * 2 + 1;
-    const dotSpacing = Math.min(naturalSpacing, VIZ_PLOT_MAX / maxCount);
-    const plotHeight = maxCount * dotSpacing;
-    const baselineY = VIZ_MARGIN.top + plotHeight;
-    // Room for whichever tick size is about to be drawn below the axis.
-    const svgHeight = baselineY + (vizIsNarrow() ? VIZ_MARGIN.bottomNarrow : VIZ_MARGIN.bottom);
+    // Draws the caption, stats, dot plot and legend for the points inside the
+    // current limits. Called on every slider movement, so it rebuilds only
+    // these pieces - never the slider being dragged.
+    function drawDistribution(){
+      const lo = limits.lo, hi = limits.hi;
+      const narrowed = lo !== null || hi !== null;
+      const shown = narrowed
+        ? points.filter(p => (lo === null || p.v >= lo) && (hi === null || p.v <= hi))
+        : points;
+      distTop.innerHTML = '';
+      legendBox.innerHTML = '';
 
-    let dotsSvg = '';
-    bins.forEach((bin, i) => {
-      const cx = VIZ_MARGIN.left + (i + 0.5) * binWidth;
-      bin.forEach((p, k) => {
-        const cy = baselineY - (k + 0.5) * dotSpacing;
-        dotsSvg += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + radius.toFixed(1) + '" fill="' + categoryColor(p.cat) + '" fill-opacity="0.88"/>';
+      const sub = document.createElement('div');
+      sub.className = 'viz-sub';
+      if (narrowed){
+        sub.textContent = 'Showing ' + shown.length + ' of ' + points.length + ' matching listing' +
+          (points.length === 1 ? '' : 's') + ' with a ' + axis.label + ' from ' +
+          fmt(lo === null ? dataMin : lo) + ' to ' + fmt(hi === null ? dataMax : hi);
+      } else {
+        sub.textContent = points.length === filtered.length
+          ? ('Across all ' + filtered.length + ' matching listing' + (filtered.length === 1 ? '' : 's'))
+          : ('Across ' + points.length + ' of ' + filtered.length + ' matching listings with a known ' + axis.label);
+      }
+      distTop.appendChild(sub);
+
+      if (shown.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'viz-empty';
+        empty.textContent = 'No listings in that range - widen the slider below.';
+        distTop.appendChild(empty);
+        return;
+      }
+
+      const values = shown.map(p => p.v);
+      const stats = computeStats(values);
+
+      const grid = document.createElement('div');
+      grid.className = 'viz-stats-grid';
+      const statDefs = [
+        ['Mean', fmt(stats.mean)],
+        ['Median', fmt(stats.median)],
+        ['Std dev', stats.n > 1 ? fmt(stats.stdev) : '—'],
+        ['Low', fmt(stats.min)],
+        ['High', fmt(stats.max)],
+        ['Listings', String(stats.n)],
+      ];
+      statDefs.forEach(([lbl, val]) => {
+        const card = document.createElement('div');
+        card.className = 'viz-stat';
+        card.innerHTML = '<div class="viz-stat-label">' + lbl + '</div><div class="viz-stat-value">' + val + '</div>';
+        grid.appendChild(card);
       });
-    });
+      distTop.appendChild(grid);
 
-    // The svg is drawn at VIZ_WIDTH user units and scaled to fit, so on a
-    // phone (~350px for an 860-unit canvas) a 10-unit label rendered at about
-    // four real pixels. Double the type there, and drop to three ticks so the
-    // bigger labels don't collide; the axis line and bottom margin grow to
-    // match. vizIsNarrow() is read at draw time - see the matchMedia listener
-    // further down, which redraws when the layout crosses the breakpoint.
-    const narrow = vizIsNarrow();
-    const tickFont = narrow ? 20 : 10;
-    const tickBaseline = baselineY + (narrow ? 28 : 17);
-    const tickCount = narrow ? 3 : 5;
-    let ticksSvg = '';
-    for (let t = 0; t < tickCount; t++){
-      const frac = t / (tickCount - 1);
-      const x = VIZ_MARGIN.left + frac * plotWidth;
-      const val = minV + frac * (maxV - minV);
-      const anchor = t === 0 ? 'start' : (t === tickCount - 1 ? 'end' : 'middle');
-      ticksSvg += '<line x1="' + x.toFixed(1) + '" y1="' + baselineY.toFixed(1) + '" x2="' + x.toFixed(1) + '" y2="' + (baselineY + 4).toFixed(1) + '" stroke="' + VIZ_LINE_COLOR + '" stroke-width="1"/>';
-      ticksSvg += '<text x="' + x.toFixed(1) + '" y="' + tickBaseline.toFixed(1) + '" text-anchor="' + anchor + '" font-size="' + tickFont + '" font-family="IBM Plex Mono, monospace" fill="' + VIZ_FAINT_COLOR + '">' + fmt(val) + '</text>';
+      // ---- dot plot ----
+      // Axis bounds track the min/max of what is shown, not a fixed global
+      // range, so the chart always uses its full width - which is also what
+      // makes a narrowed slider a zoom rather than a crop.
+      let minV = stats.min, maxV = stats.max;
+      if (minV === maxV){
+        // A 10%-of-value pad suits a price but is absurd for a year (10% of
+        // 2015 is +/-200 years), so vintage mode pads by a flat 1 year.
+        const pad = xMode === 'vintage' ? 1 : (minV === 0 ? 1 : Math.abs(minV) * 0.1);
+        minV -= pad; maxV += pad;
+      }
+      const plotWidth = VIZ_WIDTH - VIZ_MARGIN.left - VIZ_MARGIN.right;
+      // Vintage year is discrete: one bin per year across the shown range
+      // (capped at 60), rather than the sqrt-scaled count below, which was
+      // tuned for smoothly distributed price data.
+      const yearSpan = xMode === 'vintage' ? Math.round(maxV - minV) + 1 : null;
+      const numBins = (xMode === 'vintage' && yearSpan <= 60)
+        ? Math.max(1, yearSpan)
+        : Math.max(8, Math.min(56, Math.round(Math.sqrt(shown.length) * 1.4)));
+      const binWidth = plotWidth / numBins;
+      const radius = Math.max(1.6, Math.min(4.5, binWidth / 2 - 0.6));
+      const bins = Array.from({ length: numBins }, () => []);
+      shown.forEach(p => {
+        let idx = Math.floor((p.v - minV) / (maxV - minV) * numBins);
+        if (idx >= numBins) idx = numBins - 1;
+        if (idx < 0) idx = 0;
+        bins[idx].push(p);
+      });
+      const maxCount = Math.max(1, ...bins.map(b => b.length));
+      // Dots stack from the axis upward, edge-to-edge; spacing compresses
+      // only if the tallest bin would exceed VIZ_PLOT_MAX.
+      const naturalSpacing = radius * 2 + 1;
+      const dotSpacing = Math.min(naturalSpacing, VIZ_PLOT_MAX / maxCount);
+      const plotHeight = maxCount * dotSpacing;
+      const baselineY = VIZ_MARGIN.top + plotHeight;
+      // Room for whichever tick size is about to be drawn below the axis.
+      const svgHeight = baselineY + (vizIsNarrow() ? VIZ_MARGIN.bottomNarrow : VIZ_MARGIN.bottom);
+
+      let dotsSvg = '';
+      bins.forEach((bin, i) => {
+        const cx = VIZ_MARGIN.left + (i + 0.5) * binWidth;
+        bin.forEach((p, k) => {
+          const cy = baselineY - (k + 0.5) * dotSpacing;
+          dotsSvg += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + radius.toFixed(1) + '" fill="' + categoryColor(p.cat) + '" fill-opacity="0.88"/>';
+        });
+      });
+
+      // The svg is drawn at VIZ_WIDTH user units and scaled to fit, so on a
+      // phone (~350px for an 860-unit canvas) a 10-unit label rendered at
+      // about four real pixels. Double the type there, and drop to three ticks
+      // so the bigger labels don't collide; the axis line and bottom margin
+      // grow to match. vizIsNarrow() is read at draw time - see the
+      // matchMedia listener further down, which redraws when the layout
+      // crosses the breakpoint.
+      const narrow = vizIsNarrow();
+      const tickFont = narrow ? 20 : 10;
+      const tickBaseline = baselineY + (narrow ? 28 : 17);
+      const tickCount = narrow ? 3 : 5;
+      let ticksSvg = '';
+      for (let t = 0; t < tickCount; t++){
+        const frac = t / (tickCount - 1);
+        const x = VIZ_MARGIN.left + frac * plotWidth;
+        const val = minV + frac * (maxV - minV);
+        const anchor = t === 0 ? 'start' : (t === tickCount - 1 ? 'end' : 'middle');
+        ticksSvg += '<line x1="' + x.toFixed(1) + '" y1="' + baselineY.toFixed(1) + '" x2="' + x.toFixed(1) + '" y2="' + (baselineY + 4).toFixed(1) + '" stroke="' + VIZ_LINE_COLOR + '" stroke-width="1"/>';
+        ticksSvg += '<text x="' + x.toFixed(1) + '" y="' + tickBaseline.toFixed(1) + '" text-anchor="' + anchor + '" font-size="' + tickFont + '" font-family="IBM Plex Mono, monospace" fill="' + VIZ_FAINT_COLOR + '">' + fmt(val) + '</text>';
+      }
+
+      const svgMarkup = '<svg viewBox="0 0 ' + VIZ_WIDTH + ' ' + svgHeight.toFixed(1) + '" xmlns="http://www.w3.org/2000/svg">' +
+        '<line x1="' + VIZ_MARGIN.left + '" y1="' + baselineY.toFixed(1) + '" x2="' + (VIZ_MARGIN.left + plotWidth).toFixed(1) + '" y2="' + baselineY.toFixed(1) + '" stroke="' + VIZ_LINE_COLOR + '" stroke-width="1"/>' +
+        ticksSvg + dotsSvg +
+        '</svg>';
+
+      const chartWrap = document.createElement('div');
+      chartWrap.className = 'viz-chart-wrap';
+      chartWrap.innerHTML = svgMarkup;
+      distTop.appendChild(chartWrap);
+
+      // Legend: only the categories shown, most common first.
+      const catCounts = new Map();
+      shown.forEach(p => catCounts.set(p.cat, (catCounts.get(p.cat) || 0) + 1));
+      const legend = document.createElement('div');
+      legend.className = 'viz-legend';
+      [...catCounts.entries()].sort((a, b) => b[1] - a[1]).forEach(([cat, count]) => {
+        const item = document.createElement('span');
+        item.className = 'viz-legend-item';
+        item.innerHTML = '<span class="viz-legend-swatch" style="background:' + categoryColor(cat) + '"></span>' + cat + ' (' + count + ')';
+        legend.appendChild(item);
+      });
+      legendBox.appendChild(legend);
     }
 
-    const svgMarkup = '<svg viewBox="0 0 ' + VIZ_WIDTH + ' ' + svgHeight.toFixed(1) + '" xmlns="http://www.w3.org/2000/svg">' +
-      '<line x1="' + VIZ_MARGIN.left + '" y1="' + baselineY.toFixed(1) + '" x2="' + (VIZ_MARGIN.left + plotWidth).toFixed(1) + '" y2="' + baselineY.toFixed(1) + '" stroke="' + VIZ_LINE_COLOR + '" stroke-width="1"/>' +
-      ticksSvg + dotsSvg +
-      '</svg>';
-
-    const chartWrap = document.createElement('div');
-    chartWrap.className = 'viz-chart-wrap';
-    chartWrap.innerHTML = svgMarkup;
-    wrap.appendChild(chartWrap);
-
-    // Legend: only the categories present here, most common first.
-    const catCounts = new Map();
-    points.forEach(p => catCounts.set(p.cat, (catCounts.get(p.cat) || 0) + 1));
-    const legend = document.createElement('div');
-    legend.className = 'viz-legend';
-    [...catCounts.entries()].sort((a, b) => b[1] - a[1]).forEach(([cat, count]) => {
-      const item = document.createElement('span');
-      item.className = 'viz-legend-item';
-      item.innerHTML = '<span class="viz-legend-swatch" style="background:' + categoryColor(cat) + '"></span>' + cat + ' (' + count + ')';
-      legend.appendChild(item);
-    });
-    wrap.appendChild(legend);
+    wrap.appendChild(distTop);
+    // Nothing to narrow when every point has the same value.
+    if (scale.steps > 0){
+      wrap.appendChild(buildVizRangeSlider(scale, limits, fmt, axis.label, drawDistribution));
+    }
+    wrap.appendChild(legendBox);
+    drawDistribution();
 
     return wrap;
+  }
+
+  // Maps slider positions (0..steps) to values and back. Vintage years step
+  // one year at a time. Prices use a LOG scale: most teas sit well under
+  // $1/g while a few aged cakes run to $20/g+, and on a straight scale the
+  // whole everyday range would be crammed into the first few pixels.
+  const VIZ_RANGE_STEPS = 1000;
+  function vizRangeScale(min, max, discrete, logScale){
+    if (discrete){
+      const span = Math.round(max - min);
+      return { min, max, steps: span, toValue: pos => min + pos, toPos: v => Math.round(v - min) };
+    }
+    if (max <= min) return { min, max, steps: 0, toValue: () => min, toPos: () => 0 };
+    const steps = VIZ_RANGE_STEPS;
+    if (logScale){
+      // A $0.00 listing (a free sample, a gift) can't go on a log scale, so
+      // everything shifts up by just enough for the bottom to sit at 0.01.
+      const shift = min > 0 ? 0 : 0.01 - min;
+      const a = Math.log(min + shift), b = Math.log(max + shift);
+      return {
+        min, max, steps,
+        toValue: pos => pos <= 0 ? min : pos >= steps ? max : Math.exp(a + (b - a) * pos / steps) - shift,
+        toPos: v => Math.max(0, Math.min(steps, Math.round((Math.log(v + shift) - a) / (b - a) * steps))),
+      };
+    }
+    return {
+      min, max, steps,
+      toValue: pos => min + (max - min) * pos / steps,
+      toPos: v => Math.max(0, Math.min(steps, Math.round((v - min) / (max - min) * steps))),
+    };
+  }
+
+  // The two-handle slider under the dot plot: two stacked <input type=range>
+  // (so both are keyboard- and touch-operable for free) over one drawn track.
+  // A handle at its end stores null - "no limit" - in `limits`.
+  function buildVizRangeSlider(scale, limits, fmt, label, onChange){
+    const box = document.createElement('div');
+    box.className = 'viz-range';
+
+    const head = document.createElement('div');
+    head.className = 'viz-range-head';
+    const title = document.createElement('span');
+    title.className = 'viz-range-title';
+    title.textContent = 'Show ' + label + ' range';
+    const resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.className = 'viz-range-reset';
+    resetBtn.textContent = 'Full range';
+    head.appendChild(title);
+    head.appendChild(resetBtn);
+    box.appendChild(head);
+
+    const track = document.createElement('div');
+    track.className = 'viz-range-track';
+    const fill = document.createElement('div');
+    fill.className = 'viz-range-fill';
+    track.appendChild(fill);
+    function makeInput(which){
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = '0';
+      input.max = String(scale.steps);
+      input.step = '1';
+      input.className = 'viz-range-input viz-range-' + which;
+      input.setAttribute('aria-label', (which === 'lo' ? 'Lowest ' : 'Highest ') + label + ' shown');
+      track.appendChild(input);
+      return input;
+    }
+    const loInput = makeInput('lo');
+    const hiInput = makeInput('hi');
+    box.appendChild(track);
+
+    const valuesRow = document.createElement('div');
+    valuesRow.className = 'viz-range-values';
+    const loText = document.createElement('span');
+    const hiText = document.createElement('span');
+    valuesRow.appendChild(loText);
+    valuesRow.appendChild(hiText);
+    box.appendChild(valuesRow);
+
+    // Limits outside the current data (left over from a wider filter) are
+    // pinned to its edges.
+    const posOf = (v, fallback) => v === null ? fallback : scale.toPos(Math.min(scale.max, Math.max(scale.min, v)));
+    loInput.value = String(posOf(limits.lo, 0));
+    hiInput.value = String(posOf(limits.hi, scale.steps));
+
+    function sync(){
+      const lo = Number(loInput.value), hi = Number(hiInput.value);
+      const f = x => (x / scale.steps);
+      // Thumbs are inset by half their width at each end, so is the fill.
+      fill.style.left = 'calc(var(--thumb) / 2 + (100% - var(--thumb)) * ' + f(lo) + ')';
+      fill.style.right = 'calc(var(--thumb) / 2 + (100% - var(--thumb)) * ' + (1 - f(hi)) + ')';
+      loText.textContent = fmt(lo <= 0 ? scale.min : scale.toValue(lo));
+      hiText.textContent = fmt(hi >= scale.steps ? scale.max : scale.toValue(hi));
+      // Two handles on one spot: whichever can still move gets to be on top,
+      // or a pair parked at the right end could never be pulled apart.
+      loInput.style.zIndex = lo > scale.steps / 2 ? '3' : '2';
+      resetBtn.hidden = lo === 0 && hi === scale.steps;
+    }
+    function commit(){
+      const lo = Number(loInput.value), hi = Number(hiInput.value);
+      limits.lo = lo <= 0 ? null : scale.toValue(lo);
+      limits.hi = hi >= scale.steps ? null : scale.toValue(hi);
+      sync();
+      onChange();
+    }
+    loInput.addEventListener('input', () => {
+      if (Number(loInput.value) > Number(hiInput.value)) loInput.value = hiInput.value;
+      commit();
+    });
+    hiInput.addEventListener('input', () => {
+      if (Number(hiInput.value) < Number(loInput.value)) hiInput.value = loInput.value;
+      commit();
+    });
+    resetBtn.addEventListener('click', () => {
+      loInput.value = '0';
+      hiInput.value = String(scale.steps);
+      commit();
+    });
+    sync();
+    return box;
   }
 
   // "Show all" used to build a listing card for every match in one
@@ -5077,7 +5393,9 @@
 
     const sortLabel = state.dataset === 'accessories'
       ? 'price'
-      : (state.sortField === 'price' ? 'price per gram' : 'weight');
+      : state.sortField === 'year'
+        ? ('year, ' + (state.sortDir === 'desc' ? 'newest' : 'oldest') + ' first')
+        : (state.sortField === 'price' ? 'price per gram' : 'weight');
 
     const heading = document.createElement('div');
     heading.className = 'results-heading';
