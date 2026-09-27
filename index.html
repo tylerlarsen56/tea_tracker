@@ -1384,6 +1384,13 @@
     border-radius:50%;
     flex-shrink:0;
   }
+  /* Legend key for the "Price vs year" median line. */
+  .viz-legend-line{
+    width:16px; height:2px;
+    border-radius:1px;
+    background:#B3AAA8; /* VIZ_MEDIAN_COLOR */
+    flex-shrink:0;
+  }
 
   .listing-title{
     font-size:15px;
@@ -2560,7 +2567,7 @@
     accessorySubs: [],    // "Category|Sub" keys; see accessorySubKey()
     formFactors: [], // selected form_factor values; empty = all
     vizXAxis: 'price',    // 'price' | 'vintage' dot-plot; forced to 'price' for accessories
-    vizChart: 'distribution', // 'distribution' (dot plot) | 'notes' (tasting-note donut)
+    vizChart: 'distribution', // 'distribution' (dot plot) | 'notes' (tasting-note donut) | 'scatter' (price vs year)
     vizShowNotes: false,  // donut: "Show individual tasting notes" (outer ring + per-note rows)
     // Dot-plot range slider, per axis key ('price_per_gram' | 'year' |
     // 'price_usd'): { lo, hi }, each null = that end left at the data's edge.
@@ -4610,6 +4617,9 @@
   // -------------------------------------------------------------------
   const VIZ_LINE_COLOR = '#4A3C36';    // matches --line
   const VIZ_FAINT_COLOR = '#7D6C60';   // matches --ink-faint
+  const VIZ_INK_COLOR = '#E9DFE1';     // matches --ink
+  const VIZ_MEDIAN_COLOR = '#B3AAA8';  // "Price vs year" median line: a light warm gray, quieter than --ink
+  const VIZ_BG_COLOR = '#302726';      // matches --surface (the panel behind the chart)
   const VIZ_WIDTH = 860;
   const VIZ_MARGIN = { top: 14, right: 18, bottom: 30, bottomNarrow: 44, left: 18 };
   // Phone-width layout, matching the <=820px CSS breakpoint. Read at draw
@@ -4936,6 +4946,201 @@
     return wrap;
   }
 
+  // -------------------------------------------------------------------
+  // "Price vs year": every filtered tea with BOTH a vintage year and a price
+  // per gram, as one dot, colored by tea type. Answers "do older teas really
+  // cost more, and by how much" at a glance.
+  //
+  //  * Y is a LOG scale. Prices run from a few cents to $40+/g; on a straight
+  //    axis the everyday teas would be one smear along the bottom and the
+  //    chart would only show the handful of aged rarities.
+  //  * Years are whole numbers, so every tea of a year would sit on one
+  //    vertical line. Each dot is nudged sideways by a small FIXED amount
+  //    (from a hash of its URL, so it doesn't jump around between redraws)
+  //    to spread each year's column into a band.
+  //  * A line through each year's median price is drawn on top - the trend
+  //    the cloud of dots is hard to read by eye.
+  // -------------------------------------------------------------------
+  const SCATTER_JITTER = 0.34;       // max sideways nudge, in years
+  const SCATTER_MIN_FOR_MEDIAN = 3;  // a year needs this many teas for a median point
+
+  function stableUnit(str){
+    // FNV-1a -> [0, 1). Cheap, and the same answer every time for a URL.
+    let h = 2166136261;
+    const s = String(str || '');
+    for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h >>> 0) / 4294967296;
+  }
+
+  // "Nice" log-axis ticks: 1, 2.5, 5 times each power of ten inside the range.
+  function logTicks(min, max){
+    const out = [];
+    for (let e = Math.floor(Math.log10(min)) - 1; e <= Math.ceil(Math.log10(max)) + 1; e++){
+      [1, 2.5, 5].forEach(m => {
+        const v = m * Math.pow(10, e);
+        if (v >= min * 0.999 && v <= max * 1.001) out.push(v);
+      });
+    }
+    return out;
+  }
+
+  function fmtPpgTick(v){
+    if (v >= 10) return '$' + v.toFixed(0);
+    if (v >= 1) return '$' + (Number.isInteger(v) ? v.toFixed(0) : v.toFixed(1));
+    if (v >= 0.1) return '$' + v.toFixed(2).replace(/0$/, '');
+    return '$' + v.toFixed(3).replace(/0+$/, '');
+  }
+
+  // Hover text for one listing's dot, on every chart that draws one dot per
+  // listing: its name, then shop · vintage · price.
+  function listingDotTitle(r){
+    const facts = [r.site || ''];
+    if (r.year !== null && r.year !== undefined) facts.push(String(r.year));
+    if (r.price_per_gram !== null && r.price_per_gram !== undefined && !Number.isNaN(r.price_per_gram)){
+      facts.push('$' + r.price_per_gram.toFixed(3) + '/g');
+    }
+    if (r.price_usd !== null && r.price_usd !== undefined && !Number.isNaN(r.price_usd)){
+      facts.push('$' + r.price_usd.toFixed(2));
+    }
+    return '<title>' + escapeXml(r.product_title || '') +
+      (r.variant_title ? ' (' + escapeXml(r.variant_title) + ')' : '') + '\n' +
+      escapeXml(facts.filter(Boolean).join(' · ')) + '</title>';
+  }
+
+  function buildPriceYearScatter(filtered, wrap){
+    const pts = filtered.filter(r =>
+      r.year !== null && r.price_per_gram !== null && !Number.isNaN(r.price_per_gram) && r.price_per_gram > 0);
+
+    const sub = document.createElement('div');
+    sub.className = 'viz-sub';
+    sub.textContent = pts.length + ' of ' + filtered.length + ' matching listing' +
+      (filtered.length === 1 ? '' : 's') + ' have both a vintage year and a price per gram' +
+      (pts.length ? ' · price axis is logarithmic' : '');
+    wrap.appendChild(sub);
+
+    if (pts.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'viz-empty';
+      empty.textContent = 'Nothing to plot - none of these listings have both a vintage year and a price per gram.';
+      wrap.appendChild(empty);
+      return wrap;
+    }
+
+    let yMin = Infinity, yMax = -Infinity, xMin = Infinity, xMax = -Infinity;
+    pts.forEach(r => {
+      if (r.price_per_gram < yMin) yMin = r.price_per_gram;
+      if (r.price_per_gram > yMax) yMax = r.price_per_gram;
+      if (r.year < xMin) xMin = r.year;
+      if (r.year > xMax) xMax = r.year;
+    });
+    // Half a year of room either side, so the edge columns' jitter fits; a
+    // little headroom above and below on the log axis.
+    const x0 = xMin - 0.5, x1 = xMax + 0.5;
+    const ly0 = Math.log10(yMin) - 0.08, ly1 = Math.log10(yMax) + 0.08;
+
+    const narrow = vizIsNarrow();
+    // A phone shrinks this 860-unit canvas to under half size, so its type
+    // is drawn much bigger to land at a readable size.
+    const font = narrow ? 26 : 10;
+    const M = narrow
+      ? { top: 18, right: 18, bottom: 62, left: 124 }
+      : { top: 12, right: 18, bottom: 32, left: 54 };
+    const plotW = VIZ_WIDTH - M.left - M.right;
+    const plotH = narrow ? 720 : 380;
+    const H = M.top + plotH + M.bottom;
+    const xOf = yr => M.left + (yr - x0) / (x1 - x0) * plotW;
+    const yOf = v => M.top + (1 - (Math.log10(v) - ly0) / (ly1 - ly0)) * plotH;
+    const r = narrow ? 4.2 : 2.6;
+
+    let svg = '';
+    // Horizontal gridlines + price labels.
+    logTicks(Math.pow(10, ly0), Math.pow(10, ly1)).forEach(v => {
+      const y = yOf(v);
+      svg += '<line x1="' + M.left + '" x2="' + (M.left + plotW) + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) +
+        '" stroke="' + VIZ_LINE_COLOR + '" stroke-width="1" stroke-opacity="0.45"/>';
+      svg += '<text x="' + (M.left - 8) + '" y="' + (y + font * 0.35).toFixed(1) + '" text-anchor="end" font-size="' + font +
+        '" font-family="IBM Plex Mono, monospace" fill="' + VIZ_FAINT_COLOR + '">' + fmtPpgTick(v) + '/g</text>';
+    });
+    // Year ticks: a step that gives roughly 5 (phone) to 9 (desktop) labels.
+    const span = xMax - xMin;
+    const want = narrow ? 5 : 9;
+    const step = [1, 2, 5, 10, 20, 25, 50].find(s => span / s <= want) || 50;
+    const baseY = M.top + plotH;
+    svg += '<line x1="' + M.left + '" x2="' + (M.left + plotW) + '" y1="' + baseY + '" y2="' + baseY + '" stroke="' + VIZ_LINE_COLOR + '" stroke-width="1"/>';
+    // A minor tick at every single year, a longer labelled one every `step`.
+    const minorLen = narrow ? 7 : 4, majorLen = narrow ? 14 : 7;
+    for (let yr = xMin; yr <= xMax; yr++){
+      if (yr % step === 0) continue;
+      const x = xOf(yr);
+      svg += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + baseY + '" y2="' + (baseY + minorLen) +
+        '" stroke="' + VIZ_FAINT_COLOR + '" stroke-opacity="0.55" stroke-width="' + (narrow ? 1.5 : 1) + '"/>';
+    }
+    for (let yr = Math.ceil(xMin / step) * step; yr <= xMax; yr += step){
+      const x = xOf(yr);
+      svg += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + baseY + '" y2="' + (baseY + majorLen) +
+        '" stroke="' + VIZ_FAINT_COLOR + '" stroke-width="' + (narrow ? 2 : 1) + '"/>';
+      svg += '<text x="' + x.toFixed(1) + '" y="' + (baseY + (narrow ? 42 : 19)) + '" text-anchor="middle" font-size="' + font +
+        '" font-family="IBM Plex Mono, monospace" fill="' + VIZ_FAINT_COLOR + '">' + yr + '</text>';
+    }
+
+    // Dots. Most common type drawn first so the rarer colors sit on top.
+    const typeCounts = new Map();
+    pts.forEach(p => typeCounts.set(p.category, (typeCounts.get(p.category) || 0) + 1));
+    const order = new Map([...typeCounts.entries()].sort((a, b) => b[1] - a[1]).map(([c], i) => [c, i]));
+    const drawn = [...pts].sort((a, b) => order.get(a.category) - order.get(b.category));
+    drawn.forEach(p => {
+      const jx = (stableUnit(p.product_url + '|' + p.variant_title) * 2 - 1) * SCATTER_JITTER;
+      const cx = xOf(p.year + jx), cy = yOf(p.price_per_gram);
+      svg += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r + '" fill="' + categoryColor(p.category) +
+        '" fill-opacity="0.72">' + listingDotTitle(p) + '</circle>';
+    });
+
+    // Median per year, on top.
+    const byYear = new Map();
+    pts.forEach(p => {
+      if (!byYear.has(p.year)) byYear.set(p.year, []);
+      byYear.get(p.year).push(p.price_per_gram);
+    });
+    const medPts = [...byYear.entries()]
+      .filter(([, v]) => v.length >= SCATTER_MIN_FOR_MEDIAN)
+      .sort((a, b) => a[0] - b[0])
+      .map(([yr, v]) => [yr, medianOf(v), v.length]);
+    if (medPts.length >= 2){
+      const d = medPts.map(([yr, m], i) => (i ? 'L' : 'M') + xOf(yr).toFixed(1) + ' ' + yOf(m).toFixed(1)).join('');
+      svg += '<path d="' + d + '" fill="none" stroke="' + VIZ_MEDIAN_COLOR + '" stroke-width="' + (narrow ? 3.5 : 2) +
+        '" stroke-linejoin="round" stroke-opacity="0.9"/>';
+    }
+    medPts.forEach(([yr, m, n]) => {
+      svg += '<circle cx="' + xOf(yr).toFixed(1) + '" cy="' + yOf(m).toFixed(1) + '" r="' + (narrow ? 6 : 3.4) +
+        '" fill="' + VIZ_MEDIAN_COLOR + '" stroke="' + VIZ_BG_COLOR + '" stroke-width="' + (narrow ? 2 : 1.2) + '"><title>' + yr +
+        ': median $' + m.toFixed(3) + '/g across ' + n + ' listings</title></circle>';
+    });
+
+    const chart = document.createElement('div');
+    chart.className = 'viz-chart-wrap';
+    chart.innerHTML = '<svg viewBox="0 0 ' + VIZ_WIDTH + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" ' +
+      'aria-label="Price per gram against vintage year for ' + pts.length + ' listings, with the median price for each year.">' +
+      svg + '</svg>';
+    wrap.appendChild(chart);
+
+    const legend = document.createElement('div');
+    legend.className = 'viz-legend';
+    [...typeCounts.entries()].sort((a, b) => b[1] - a[1]).forEach(([cat, count]) => {
+      const item = document.createElement('span');
+      item.className = 'viz-legend-item';
+      item.innerHTML = '<span class="viz-legend-swatch" style="background:' + categoryColor(cat) + '"></span>' + escapeXml(cat) + ' (' + count + ')';
+      legend.appendChild(item);
+    });
+    if (medPts.length){
+      const item = document.createElement('span');
+      item.className = 'viz-legend-item';
+      item.innerHTML = '<span class="viz-legend-line"></span>Median price per year (years with ' + SCATTER_MIN_FOR_MEDIAN + '+ teas)';
+      legend.appendChild(item);
+    }
+    wrap.appendChild(legend);
+    return wrap;
+  }
+
   function buildVisualizePanel(filtered){
     const isAccessory = state.dataset === 'accessories';
     // "Vintage year" means nothing for a teapot; second guard after
@@ -4945,11 +5150,12 @@
     // the panel falls back to the dot plot there.
     const chartMode = isAccessory ? 'distribution' : state.vizChart;
     const showNotes = chartMode === 'notes';
+    const showScatter = chartMode === 'scatter';
     const axis = vizAxisDef(xMode, isAccessory);
     const fmt = axis.fmt;
 
     const points = filtered
-      .map(r => ({ v: r[axis.key], cat: r.category }))
+      .map(r => ({ v: r[axis.key], cat: r.category, row: r }))
       .filter(p => p.v !== null && !Number.isNaN(p.v));
 
     const wrap = document.createElement('div');
@@ -4958,7 +5164,9 @@
     const headerRow = document.createElement('div');
     headerRow.className = 'viz-header-row';
     const title = document.createElement('h3');
-    title.textContent = showNotes ? 'Tasting notes by flavor category' : axis.title;
+    title.textContent = showNotes ? 'Tasting notes by flavor category'
+      : showScatter ? 'Price per gram vs vintage year'
+      : axis.title;
     headerRow.appendChild(title);
     // Both toggles are tea-only: no vintage year and no tasting notes on a
     // teapot. They share a row so they read as one control group.
@@ -4967,7 +5175,7 @@
       toggles.className = 'viz-toggle-group';
 
       // Only meaningful for the dot plot, so it steps aside in donut mode.
-      if (!showNotes){
+      if (!showNotes && !showScatter){
         // Like the chart toggle below: labelled with the axis it switches TO,
         // not the one in use. Which one IS in use stays readable off the
         // panel heading ("Price-per-gram distribution" / "Vintage year
@@ -5023,18 +5231,23 @@
         toggles.appendChild(notesBtn);
       }
 
-      const chartBtn = document.createElement('button');
-      chartBtn.type = 'button';
-      chartBtn.className = 'viz-xaxis-toggle';
-      chartBtn.textContent = showNotes ? 'Chart: Distribution' : 'Chart: Tasting notes';
-      chartBtn.title = showNotes
-        ? 'Switch to the price distribution chart'
-        : 'Switch to the tasting-note chart';
-      chartBtn.addEventListener('click', () => {
-        state.vizChart = showNotes ? 'distribution' : 'notes';
-        render();
+      // One button for each chart you're NOT looking at.
+      [
+        ['distribution', 'Chart: Distribution', 'Switch to the price distribution chart'],
+        ['notes', 'Chart: Tasting notes', 'Switch to the tasting-note chart'],
+        ['scatter', 'Chart: Price vs year', 'Plot price per gram against vintage year'],
+      ].filter(([mode]) => mode !== chartMode).forEach(([mode, text, tip]) => {
+        const chartBtn = document.createElement('button');
+        chartBtn.type = 'button';
+        chartBtn.className = 'viz-xaxis-toggle';
+        chartBtn.textContent = text;
+        chartBtn.title = tip;
+        chartBtn.addEventListener('click', () => {
+          state.vizChart = mode;
+          render();
+        });
+        toggles.appendChild(chartBtn);
       });
-      toggles.appendChild(chartBtn);
 
       headerRow.appendChild(toggles);
     }
@@ -5049,6 +5262,17 @@
         return wrap;
       }
       return buildNoteDonut(filtered, wrap);
+    }
+
+    if (showScatter){
+      if (filtered.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'viz-empty';
+        empty.textContent = 'No listings match the current filters.';
+        wrap.appendChild(empty);
+        return wrap;
+      }
+      return buildPriceYearScatter(filtered, wrap);
     }
 
     if (filtered.length === 0){
@@ -5206,21 +5430,21 @@
         orderedGroups.forEach(([cat, pts], gi) => {
           const isLast = gi === orderedGroups.length - 1;
           const color = categoryColor(cat);
-          const counts = new Array(numBins).fill(0);
-          pts.forEach(p => { counts[binOf(p.v)]++; });
-          const gMax = Math.max(1, ...counts);
+          const binPts = Array.from({ length: numBins }, () => []);
+          pts.forEach(p => { binPts[binOf(p.v)].push(p); });
+          const gMax = Math.max(1, ...binPts.map(b => b.length));
           const spacing = Math.min(radius * 2 + 1, rowPlot / gMax);
           const top = 4;
           const baseline = top + rowPlot;
           const gStats = computeStats(pts.map(p => p.v));
 
           let body = '';
-          counts.forEach((c, i) => {
+          binPts.forEach((bin, i) => {
             const cx = VIZ_MARGIN.left + (i + 0.5) * binWidth;
-            for (let k = 0; k < c; k++){
+            bin.forEach((p, k) => {
               const cy = baseline - (k + 0.5) * spacing;
-              body += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + radius.toFixed(1) + '" fill="' + color + '" fill-opacity="0.88"/>';
-            }
+              body += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + radius.toFixed(1) + '" fill="' + color + '" fill-opacity="0.88">' + listingDotTitle(p.row) + '</circle>';
+            });
           });
           // This type's median, as a dashed marker - the quickest thing to
           // compare down the stack.
@@ -5274,7 +5498,7 @@
         const cx = VIZ_MARGIN.left + (i + 0.5) * binWidth;
         bin.forEach((p, k) => {
           const cy = baselineY - (k + 0.5) * dotSpacing;
-          dotsSvg += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + radius.toFixed(1) + '" fill="' + categoryColor(p.cat) + '" fill-opacity="0.88"/>';
+          dotsSvg += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + radius.toFixed(1) + '" fill="' + categoryColor(p.cat) + '" fill-opacity="0.88">' + listingDotTitle(p.row) + '</circle>';
         });
       });
 
