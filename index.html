@@ -5299,21 +5299,31 @@
       loInput.style.zIndex = lo > scale.steps / 2 ? '3' : '2';
       resetBtn.hidden = lo === 0 && hi === scale.steps;
     }
+    // Redrawing thousands of dots on every pixel of a drag made the slider
+    // crawl. So while a handle moves ('input') only the handle, the amber
+    // fill and the two value labels follow it; the chart, stats and legend
+    // are redrawn once, when the handle is let go ('change' - which also
+    // fires once per arrow-key press).
     function commit(){
       const lo = Number(loInput.value), hi = Number(hiInput.value);
-      limits.lo = lo <= 0 ? null : scale.toValue(lo);
-      limits.hi = hi >= scale.steps ? null : scale.toValue(hi);
+      const newLo = lo <= 0 ? null : scale.toValue(lo);
+      const newHi = hi >= scale.steps ? null : scale.toValue(hi);
       sync();
+      if (newLo === limits.lo && newHi === limits.hi) return;  // landed where it started
+      limits.lo = newLo;
+      limits.hi = newHi;
       onChange();
     }
     loInput.addEventListener('input', () => {
       if (Number(loInput.value) > Number(hiInput.value)) loInput.value = hiInput.value;
-      commit();
+      sync();
     });
     hiInput.addEventListener('input', () => {
       if (Number(hiInput.value) < Number(loInput.value)) hiInput.value = loInput.value;
-      commit();
+      sync();
     });
+    loInput.addEventListener('change', commit);
+    hiInput.addEventListener('change', commit);
     resetBtn.addEventListener('click', () => {
       loInput.value = '0';
       hiInput.value = String(scale.steps);
