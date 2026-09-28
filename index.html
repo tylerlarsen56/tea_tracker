@@ -1505,6 +1505,10 @@
     font-size:13px;
     max-width:56ch;
   }
+  /* The cart modal is wide (two form columns), so its intro runs the full
+     width of the modal rather than stopping at the 56ch reading measure. */
+  #cartModalOverlay .cart-modal-header > div{ flex:1; }
+  #cartModalOverlay .cart-modal-header p{ max-width:none; }
   .cart-modal-close{
     background:transparent;
     border:none;
@@ -2184,7 +2188,7 @@
     <div class="cart-modal-header">
       <div>
         <h2 id="cartModalTitle">Make me a cart</h2>
-        <p>Set your parameters, then generate three different single-website cart options for the same budget. Each option draws from just one site - click "Check Out" on any of them to open that site with the same items already added to your real cart there.</p>
+        <p>Set your parameters, then generate three different single-website cart options. Click "Check Out" to open that site with the same items already added to your real cart there (for Shopify-based sites only).</p>
       </div>
       <button type="button" class="cart-modal-close" id="cartModalCloseBtn" aria-label="Close">&times;</button>
     </div>
