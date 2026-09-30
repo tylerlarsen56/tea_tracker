@@ -1830,6 +1830,183 @@
     border:1px solid var(--line);
     cursor:not-allowed;
   }
+  /* =====================================================================
+     V3.6: keyword search band, Advanced search, price history.
+     ===================================================================== */
+
+  /* ---- Search band: its own full-width strip under the header ---- */
+  .search-band{
+    padding:14px 28px 12px;
+    border-bottom:1px solid var(--line);
+    background:var(--bg);
+  }
+  .search-row{
+    display:flex;
+    align-items:stretch;
+    gap:10px;
+  }
+  .search-box{
+    position:relative;
+    flex:1;
+    min-width:0;
+    display:flex;
+    align-items:center;
+  }
+  .search-icon{
+    position:absolute;
+    left:13px;
+    color:var(--ink-faint);
+    pointer-events:none;
+  }
+  .search-input{
+    width:100%;
+    background:var(--surface-2);
+    color:var(--ink);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:11px 38px 11px 40px;
+    font-size:15px;
+    font-family:inherit;
+  }
+  .search-input::placeholder{ color:var(--ink-faint); }
+  .search-input:hover{ border-color:var(--ink-faint); }
+  .search-input:focus{ outline:none; border-color:var(--amber); }
+  /* The browser's own clear "x" only exists in some browsers - ours is
+     .search-clear, so hide the native one to avoid showing two. */
+  .search-input::-webkit-search-cancel-button{ -webkit-appearance:none; appearance:none; }
+  .search-clear{
+    position:absolute;
+    right:6px;
+    width:28px; height:28px;
+    border:none;
+    background:none;
+    color:var(--ink-faint);
+    font-size:18px;
+    line-height:1;
+    cursor:pointer;
+    border-radius:50%;
+  }
+  .search-clear:hover{ color:var(--ink); background:var(--line-soft); }
+  .search-clear[hidden]{ display:none; }
+  .search-advanced-btn{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding:0 14px;
+  }
+  .search-advanced-btn .adv-label-short{ display:none; }
+  .search-advanced-btn.active{
+    background:rgba(209,160,82,0.14);
+    border-color:var(--amber);
+    color:var(--amber);
+  }
+  .search-status{
+    margin-top:8px;
+    font-size:12.5px;
+    color:var(--ink-faint);
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:4px 10px;
+  }
+  .search-status[hidden]{ display:none; }
+  .search-status strong{ color:var(--ink-dim); font-weight:600; }
+  .search-status .reset-link{ margin-top:0; font-size:12px; }
+
+  /* Sidebar note shown while a search of ALL listings is running - the
+     filters below it are not being applied, and should look it. */
+  .search-paused-note{
+    font-size:12px;
+    color:var(--ink-dim);
+    background:rgba(209,160,82,0.08);
+    border:1px solid rgba(209,160,82,0.35);
+    border-radius:4px;
+    padding:9px 10px;
+    margin-bottom:16px;
+    line-height:1.45;
+  }
+  .search-paused-note[hidden]{ display:none; }
+  .search-paused-note .reset-link{ font-size:12px; color:var(--amber); display:block; margin-top:5px; }
+  aside.filters.search-paused .filter-group,
+  aside.filters.search-paused #resetBtn{ opacity:0.5; }
+  aside.filters.search-paused .filter-group:hover{ opacity:0.85; }
+
+  /* ---- Advanced search modal (the cart-modal shell) ---- */
+  .adv-search-modal{ max-width:860px; }
+  .adv-keywords{
+    display:grid;
+    grid-template-columns:1.4fr 1fr;
+    gap:14px 22px;
+    margin:18px 0 4px;
+    padding-bottom:18px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .adv-keywords .cart-field:last-child{ grid-column:1 / -1; }
+  .adv-search-modal .sort-pair .sort-btn{ padding:8px 6px; }
+  .adv-search-modal .cart-field[hidden]{ display:none; }
+  .adv-search-modal .cart-checkbox-box{ max-height:150px; }
+  .adv-option-sub{ padding-left:26px; color:var(--ink-dim); }
+  .adv-match-count{
+    font-size:12.5px;
+    color:var(--ink-faint);
+    margin-left:auto;
+  }
+  .adv-match-count strong{ color:var(--amber); font-weight:600; }
+  @media (max-width: 720px){
+    .adv-keywords{ grid-template-columns:1fr; }
+    .adv-match-count{ margin-left:0; flex-basis:100%; }
+  }
+
+  /* ---- "See price history": deliberately quiet - faint, small, no box,
+     so thousands of rows don't grow a second call to action each. ---- */
+  .history-link{
+    background:none;
+    border:none;
+    padding:0;
+    margin-top:6px;
+    font-family:var(--font-ui);
+    font-size:11.5px;
+    color:var(--ink-faint);
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+  }
+  .history-link svg{ opacity:0.8; }
+  .history-link:hover{ color:var(--ink-dim); text-decoration:underline; text-underline-offset:2px; }
+  .history-link.active{ color:var(--amber); }
+  .history-line{ display:flex; justify-content:flex-end; }
+
+  .viz-history-title{
+    font-size:13.5px;
+    color:var(--ink);
+    margin:2px 0 2px;
+  }
+  .viz-history-title a{ text-decoration:none; }
+  .viz-history-title a:hover{ color:var(--amber); }
+  .viz-range-group{
+    display:inline-flex;
+    border:1px solid var(--line);
+    border-radius:20px;
+    overflow:hidden;
+  }
+  .viz-range-group button{
+    font-family:var(--font-ui);
+    font-size:11.5px;
+    font-weight:500;
+    padding:5px 11px;
+    border:none;
+    border-left:1px solid var(--line);
+    background:var(--surface);
+    color:var(--ink-dim);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .viz-range-group button:first-child{ border-left:none; }
+  .viz-range-group button:hover{ color:var(--ink); }
+  .viz-range-group button.active{ background:rgba(209,160,82,0.14); color:var(--amber); }
+
   /* ---------- Mobile / narrow-viewport layout ----------
      One dashboard, three breakpoints. 820px stacks the sidebar over the
      results and hides it behind the Filters button; 640px is phone-portrait
@@ -1872,6 +2049,10 @@
 
     section.results{ padding:20px 16px 56px; }
     .results-heading h2{ font-size:17px; }
+
+    .search-band{ padding:12px 16px 10px; }
+    .search-input{ font-size:16px; } /* 16px stops iOS zooming on focus */
+    .history-line{ justify-content:flex-start; }
 
     /* Keep a dropdown from opening taller than the screen it's on. */
     .site-dropdown-menu{ max-height:min(240px, 50vh); }
@@ -1918,6 +2099,12 @@
     .cart-options-grid{ grid-template-columns:1fr; }
     .load-controls{ gap:8px; }
     .load-controls .btn-primary{ flex:1 1 auto; text-align:center; }
+
+    /* The search box keeps the full width; the button shrinks to its icon
+       plus a short label. */
+    .search-advanced-btn .adv-label-long{ display:none; }
+    .search-advanced-btn .adv-label-short{ display:inline; }
+    .history-link{ min-height:32px; }
   }
 
   @media (max-width: 400px){
@@ -1972,6 +2159,31 @@
     </div>
   </header>
 
+  <!-- Keyword search, in its own band under the header so it is always one
+       tap away - on a phone too, where the sidebar collapses. See
+       parseSearchQuery() / rowSearchScore() and the Advanced search modal
+       (#advSearchModalOverlay). -->
+  <div class="search-band" role="search">
+    <div class="search-row">
+      <div class="search-box">
+        <svg class="search-icon" width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="8.5" cy="8.5" r="6" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M13 13L18 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+        <input type="search" class="search-input" id="searchInput" autocomplete="off" spellcheck="false"
+               placeholder="Search teas, teaware, shops, tasting notes…" aria-label="Search listings by keyword">
+        <button type="button" class="search-clear" id="searchClearBtn" aria-label="Clear search" title="Clear search" hidden>&times;</button>
+      </div>
+      <button type="button" class="header-btn search-advanced-btn" id="advancedSearchBtn" aria-haspopup="dialog">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 4H14M4.5 8H11.5M7 12H9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span class="adv-label-long">Advanced search</span><span class="adv-label-short">Advanced</span>
+      </button>
+    </div>
+    <div class="search-status" id="searchStatus" aria-live="polite" hidden></div>
+  </div>
+
   <main class="layout">
 
     <!-- Mobile only (see the <=820px block): the sidebar collapses behind
@@ -1983,6 +2195,13 @@
     </button>
 
     <aside class="filters" id="filtersPanel">
+
+      <!-- Shown only while a keyword search covers ALL listings (see
+           state.searchScope): the filters below are paused, not gone. -->
+      <div class="search-paused-note" id="searchPausedNote" hidden>
+        Your search is looking through every listing, so these filters are paused.
+        <button type="button" class="reset-link" id="searchWithinFiltersBtn">Search within these filters instead</button>
+      </div>
 
       <div class="filter-group">
         <span class="field-label">Showing</span>
@@ -2290,6 +2509,137 @@
   </div>
 </div>
 
+<!-- "Advanced search" modal, opened by #advancedSearchBtn. Keywords and every
+     sidebar filter in one form. Opening it SEEDS the form from what the
+     dashboard is showing now; nothing on the page changes until "Search".
+     Its "Reset all filters" clears the form's filters only - never the
+     keywords, and never the page behind it. -->
+<div class="cart-modal-overlay" id="advSearchModalOverlay" hidden>
+  <div class="cart-modal adv-search-modal" role="dialog" aria-modal="true" aria-labelledby="advSearchModalTitle">
+    <div class="cart-modal-header">
+      <div>
+        <h2 id="advSearchModalTitle">Advanced search</h2>
+        <p>Keywords plus filters, starting from what the dashboard is showing now. Results are ranked by how well they match your keywords first, then by your sort order.</p>
+      </div>
+      <button type="button" class="cart-modal-close" id="advSearchCloseBtn" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="adv-keywords">
+      <div class="cart-field">
+        <label class="field-label" for="advKeywordsInput">Keywords</label>
+        <input type="text" class="field" id="advKeywordsInput" autocomplete="off" spellcheck="false" placeholder='e.g. yiwu 2019 cake, or "old tree"'>
+        <div class="cart-hint">Every word must match. Put a phrase in "quotes" to keep it together.</div>
+      </div>
+      <div class="cart-field">
+        <label class="field-label" for="advExcludeInput">Leave out words</label>
+        <input type="text" class="field" id="advExcludeInput" autocomplete="off" spellcheck="false" placeholder="e.g. sample smoky">
+        <div class="cart-hint">Hides any listing that mentions one of these.</div>
+      </div>
+      <div class="cart-field">
+        <span class="field-label">Match keywords in</span>
+        <div class="sort-pair" id="advMatchInPair">
+          <button type="button" class="sort-btn" data-value="all">Everything (titles, shops, types, notes)</button>
+          <button type="button" class="sort-btn" data-value="titles">Titles only</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cart-form-grid">
+      <div class="cart-field">
+        <span class="field-label">Showing</span>
+        <div class="sort-pair" id="advDatasetPair">
+          <button type="button" class="sort-btn" data-value="tea">Tea</button>
+          <button type="button" class="sort-btn" data-value="accessories">Teaware &amp; Tools</button>
+        </div>
+      </div>
+
+      <div class="cart-field">
+        <span class="field-label">Availability</span>
+        <div class="sort-pair" id="advStockPair">
+          <button type="button" class="sort-btn" data-value="any">Any</button>
+          <button type="button" class="sort-btn" data-value="in">In stock</button>
+          <button type="button" class="sort-btn" data-value="out">Out of stock</button>
+        </div>
+      </div>
+
+      <div class="cart-field">
+        <span class="field-label">Websites</span>
+        <div class="cart-checkbox-box" id="advSiteBox"></div>
+        <div class="cart-hint">Leave all unchecked for every website.</div>
+      </div>
+
+      <div class="cart-field adv-tea-only">
+        <span class="field-label">Tea types</span>
+        <div class="cart-checkbox-box" id="advTypeBox"></div>
+        <div class="cart-hint">Leave all unchecked for every type.</div>
+      </div>
+
+      <div class="cart-field adv-accessory-only">
+        <span class="field-label">Category</span>
+        <div class="cart-checkbox-box" id="advAccessoryBox"></div>
+        <div class="cart-hint">Leave all unchecked for all teaware &amp; tools.</div>
+      </div>
+
+      <div class="cart-field adv-tea-only">
+        <span class="field-label">Flavor profile</span>
+        <div class="cart-checkbox-box" id="advFlavorBox"></div>
+        <div class="cart-hint">A tea qualifies if any of its tasting notes is checked.</div>
+      </div>
+
+      <div class="cart-field adv-tea-only">
+        <span class="field-label">Form factor</span>
+        <div class="cart-checkbox-box" id="advFormFactorBox"></div>
+        <div class="cart-hint">Leave all unchecked for every form factor.</div>
+      </div>
+
+      <div class="cart-field adv-tea-only">
+        <span class="field-label">Years</span>
+        <div class="cart-range-row">
+          <input type="number" class="field" id="advYearFromInput" placeholder="From" inputmode="numeric">
+          <span class="cart-range-dash">–</span>
+          <input type="number" class="field" id="advYearToInput" placeholder="To" inputmode="numeric">
+        </div>
+        <div class="cart-hint">Vintage year. Leave blank for no restriction.</div>
+      </div>
+
+      <div class="cart-field adv-tea-only">
+        <span class="field-label">Total weight (grams)</span>
+        <div class="cart-range-row">
+          <input type="number" class="field" id="advGramsFromInput" placeholder="Min" inputmode="numeric" min="0" step="1">
+          <span class="cart-range-dash">–</span>
+          <input type="number" class="field" id="advGramsToInput" placeholder="Max" inputmode="numeric" min="0" step="1">
+        </div>
+        <div class="cart-hint">Leave blank for no restriction.</div>
+      </div>
+
+      <div class="cart-field">
+        <span class="field-label">Price per listing (USD)</span>
+        <div class="cart-range-row">
+          <input type="number" class="field" id="advPriceFromInput" placeholder="Min" inputmode="decimal" min="0" step="0.01">
+          <span class="cart-range-dash">–</span>
+          <input type="number" class="field" id="advPriceToInput" placeholder="Max" inputmode="decimal" min="0" step="0.01">
+        </div>
+        <div class="cart-hint">Leave blank for no restriction.</div>
+      </div>
+
+      <div class="cart-field adv-tea-only">
+        <span class="field-label">Tyler's Picks</span>
+        <button type="button" class="toggle-btn" id="advTylersPickToggle">
+          <span>Only Tyler's Picks</span>
+          <span class="dot"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="cart-generate-row">
+      <button type="button" class="btn-primary" id="advSearchApplyBtn">Search</button>
+      <button type="button" class="cart-reset-link" id="advSearchResetBtn">Reset all filters</button>
+      <span class="adv-match-count" id="advMatchCount" aria-live="polite"></span>
+    </div>
+    <p class="cart-error" id="advSearchErrorMsg" hidden></p>
+  </div>
+</div>
+
 <!-- "What's a flavor profile?" modal, opened by #flavorWheelInfoBtn.
      The cart-modal shell with one image + one paragraph; the wheel is an
      inline base64 JPEG so this page stays self-contained. -->
@@ -2581,6 +2931,24 @@
     priceTo: null,       // inclusive upper bound on price_usd, or null
     showVisualize: false, // is the Visualize Listings panel open
     showWhatsNew: false,  // is the "See what's new" filter active
+    // Keyword search (the band under the header + Advanced search).
+    //   searchQuery      - the search box text, parsed by parseSearchQuery();
+    //                      '' = no search. Quoted "phrases" and -excluded
+    //                      words are supported in it.
+    //   searchScope      - 'all': the plain search box looks through EVERY
+    //                      listing, tea and teaware, in stock or not, and the
+    //                      sidebar filters are paused while it does.
+    //                      'filters': keywords AND the filters, which is what
+    //                      Advanced search applies.
+    //   searchTitlesOnly - match keywords against titles only (Advanced).
+    searchQuery: '',
+    searchScope: 'all',
+    searchTitlesOnly: false,
+    // "See price history": the listing whose chart is open in the Visualize
+    // panel (state.vizChart === 'history'), and the window it shows.
+    historyRow: null,
+    historyRange: 'all',   // 'all' | '1y' | '6m' | '1m'
+    vizChartBeforeHistory: 'distribution', // where "Close price history" goes back to
   };
 
   // Teaware/Tea Tools/Tea Pet are their own dataset, never part of the
@@ -3666,10 +4034,12 @@
 
   // Does a listing from `site` pass the Websites filter? Honors "Exclude
   // Selection": the same ticks either whitelist or blacklist.
-  function sitePassesFilter(site){
-    if (state.sites.length === 0) return true;
-    const ticked = state.sites.includes(site);
-    return state.sitesExclude ? !ticked : ticked;
+  // `s` is the filter set to test against: the live `state` by default, or
+  // the Advanced search modal's draft (see advDraft) for its live count.
+  function sitePassesFilter(site, s = state){
+    if (s.sites.length === 0) return true;
+    const ticked = s.sites.includes(site);
+    return s.sitesExclude ? !ticked : ticked;
   }
 
   // The websites the filter currently lets through, as a plain include-list
@@ -4007,10 +4377,10 @@
   // Does a tea row pass the Flavor Profile filter? ANY of its (untruncated)
   // notes being in a ticked category, or being a ticked note, is enough.
   // No notes never matches once the filter is active.
-  function rowPassesFlavorFilter(r){
-    if (state.flavorCategories.length === 0 && state.flavorNotes.length === 0) return true;
+  function rowPassesFlavorFilter(r, s = state){
+    if (s.flavorCategories.length === 0 && s.flavorNotes.length === 0) return true;
     return noteEntriesForRow(r).some(e =>
-      state.flavorCategories.includes(e.category) || state.flavorNotes.includes(e.key));
+      s.flavorCategories.includes(e.category) || s.flavorNotes.includes(e.key));
   }
 
   // Rebuilds the Form Factor menu from currentFormFactors. Its options ARE
@@ -4262,36 +4632,52 @@
     render();
   });
 
-  yearFromInput.addEventListener('input', (e) => {
-    const v = e.target.value;
-    state.yearFrom = v === '' ? null : parseInt(v, 10);
-    state.showAll = false; // editing a filter drops back to the top 10
-    render();
-  });
-  yearToInput.addEventListener('input', (e) => {
-    const v = e.target.value;
-    state.yearTo = v === '' ? null : parseInt(v, 10);
-    state.showAll = false; // editing a filter drops back to the top 10
-    render();
-  });
+  // -------------------------------------------------------------------
+  // Typed number boxes (year range, weight range, price range) apply when
+  // the number is FINISHED, not on every keystroke. Typing "1500" used to
+  // filter - and redraw the list and the visualization - for "1", "15" and
+  // "150" on the way, each one a full pass over twenty thousand listings,
+  // which is what made typing in these boxes lag.
+  //
+  // "Finished" means any of: Enter, leaving the box, a spinner-arrow click
+  // (those fire 'change' at once), or a pause in typing of
+  // TYPED_FILTER_IDLE_MS. The pause is what makes it feel live without
+  // chasing each digit.
+  // -------------------------------------------------------------------
+  const TYPED_FILTER_IDLE_MS = 700;
+
+  // `field` is the state key the box drives, `parse` turns the box text into
+  // a value (null = empty box = no bound).
+  function bindTypedFilterInput(el, field, parse){
+    let timer = null;
+    function commit(){
+      clearTimeout(timer);
+      timer = null;
+      const v = el.value === '' ? null : parse(el.value);
+      const next = (v === null || Number.isNaN(v)) ? null : v;
+      if (next === state[field]) return;   // nothing actually changed
+      state[field] = next;
+      state.showAll = false; // editing a filter drops back to the top 10
+      render();
+    }
+    el.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(commit, TYPED_FILTER_IDLE_MS);
+    });
+    el.addEventListener('change', commit);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') commit(); });
+  }
+  const parseYear = v => parseInt(v, 10);
+  bindTypedFilterInput(yearFromInput, 'yearFrom', parseYear);
+  bindTypedFilterInput(yearToInput, 'yearTo', parseYear);
 
   // -------------------------------------------------------------------
   // Total weight range: "empty box = no bound". Pre-filled 0-1000g.
   // -------------------------------------------------------------------
   const gramsFromInput = document.getElementById('gramsFromInput');
   const gramsToInput = document.getElementById('gramsToInput');
-  gramsFromInput.addEventListener('input', (e) => {
-    const v = e.target.value;
-    state.gramsFrom = v === '' ? null : parseFloat(v);
-    state.showAll = false; // editing a filter drops back to the top 10
-    render();
-  });
-  gramsToInput.addEventListener('input', (e) => {
-    const v = e.target.value;
-    state.gramsTo = v === '' ? null : parseFloat(v);
-    state.showAll = false; // editing a filter drops back to the top 10
-    render();
-  });
+  bindTypedFilterInput(gramsFromInput, 'gramsFrom', parseFloat);
+  bindTypedFilterInput(gramsToInput, 'gramsTo', parseFloat);
 
   // -------------------------------------------------------------------
   // Price range: "empty box = no bound". Unlike weight it applies to BOTH
@@ -4299,18 +4685,8 @@
   // -------------------------------------------------------------------
   const priceFromInput = document.getElementById('priceFromInput');
   const priceToInput = document.getElementById('priceToInput');
-  priceFromInput.addEventListener('input', (e) => {
-    const v = e.target.value;
-    state.priceFrom = v === '' ? null : parseFloat(v);
-    state.showAll = false; // editing a filter drops back to the top 10
-    render();
-  });
-  priceToInput.addEventListener('input', (e) => {
-    const v = e.target.value;
-    state.priceTo = v === '' ? null : parseFloat(v);
-    state.showAll = false; // editing a filter drops back to the top 10
-    render();
-  });
+  bindTypedFilterInput(priceFromInput, 'priceFrom', parseFloat);
+  bindTypedFilterInput(priceToInput, 'priceTo', parseFloat);
 
   // -------------------------------------------------------------------
   // Availability toggle: cycles Any -> In stock only -> Out of stock only
@@ -4382,6 +4758,112 @@
   }
 
   // -------------------------------------------------------------------
+  // Search band. The box applies as you type, after a short pause
+  // (SEARCH_IDLE_MS) so a quick typist isn't re-filtering twenty thousand
+  // listings per letter; Enter applies at once.
+  // -------------------------------------------------------------------
+  const SEARCH_IDLE_MS = 220;
+  const searchInput = document.getElementById('searchInput');
+  const searchClearBtn = document.getElementById('searchClearBtn');
+  const searchStatus = document.getElementById('searchStatus');
+  let searchTimer = null;
+
+  function setSearchQuery(text){
+    clearTimeout(searchTimer);
+    const hadSearch = !!activeSearch();
+    state.searchQuery = text;
+    // A brand-new search starts out looking through everything; one that is
+    // being edited keeps whatever scope it already had.
+    if (!hadSearch) state.searchScope = 'all';
+    if (!activeSearch()){
+      // Search cleared: back to the plain filtered view, with the defaults a
+      // fresh search should start from.
+      state.searchScope = 'all';
+      state.searchTitlesOnly = false;
+    }
+    state.showAll = false;
+    render();
+  }
+
+  searchInput.addEventListener('input', () => {
+    searchClearBtn.hidden = searchInput.value === '';
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => setSearchQuery(searchInput.value), SEARCH_IDLE_MS);
+  });
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter'){ e.preventDefault(); setSearchQuery(searchInput.value); }
+    else if (e.key === 'Escape' && searchInput.value !== ''){
+      e.stopPropagation();
+      searchInput.value = '';
+      setSearchQuery('');
+    }
+  });
+  searchClearBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    setSearchQuery('');
+    searchInput.focus();
+  });
+
+  function setSearchScope(scope){
+    state.searchScope = scope;
+    state.showAll = false;
+    render();
+  }
+  document.getElementById('searchWithinFiltersBtn').addEventListener('click', () => setSearchScope('filters'));
+
+  // Keeps the box, the clear button and the sidebar's "paused" note in step
+  // with state - also after Advanced search or a reset changed them.
+  function updateSearchUI(){
+    if (searchInput.value !== state.searchQuery && document.activeElement !== searchInput){
+      searchInput.value = state.searchQuery;
+    }
+    searchClearBtn.hidden = searchInput.value === '';
+    const paused = searchPausesFilters() && allRows.length > 0;
+    document.getElementById('searchPausedNote').hidden = !paused;
+    document.getElementById('filtersPanel').classList.toggle('search-paused', paused);
+    document.getElementById('advancedSearchBtn').classList.toggle('active',
+      !!activeSearch() && state.searchScope === 'filters');
+  }
+
+  // The line under the search box: how many matched, and where it looked.
+  function updateSearchStatus(matchCountValue){
+    const search = activeSearch();
+    if (!search || allRows.length === 0){
+      searchStatus.hidden = true;
+      searchStatus.innerHTML = '';
+      return;
+    }
+    searchStatus.hidden = false;
+    searchStatus.innerHTML = '';
+    const count = document.createElement('span');
+    count.innerHTML = '<strong>' + matchCountValue + '</strong> ' +
+      (matchCountValue === 1 ? 'match' : 'matches');
+    searchStatus.appendChild(count);
+
+    const where = document.createElement('span');
+    where.textContent = (state.searchScope === 'all'
+      ? 'in all ' + allRows.length + ' listings (tea and teaware, any stock) - filters paused'
+      : 'within your filters') + (state.searchTitlesOnly ? ' · titles only' : '');
+    searchStatus.appendChild(where);
+
+    const swap = document.createElement('button');
+    swap.type = 'button';
+    swap.className = 'reset-link';
+    swap.textContent = state.searchScope === 'all' ? 'Search within my filters' : 'Search all listings';
+    swap.addEventListener('click', () => setSearchScope(state.searchScope === 'all' ? 'filters' : 'all'));
+    searchStatus.appendChild(swap);
+
+    if (state.searchTitlesOnly){
+      const everything = document.createElement('button');
+      everything.type = 'button';
+      everything.className = 'reset-link';
+      everything.textContent = 'Match everything, not just titles';
+      everything.addEventListener('click', () => { state.searchTitlesOnly = false; state.showAll = false; render(); });
+      searchStatus.appendChild(everything);
+    }
+  }
+
+  // -------------------------------------------------------------------
   // Sort buttons: one active field. Clicking it flips direction.
   // -------------------------------------------------------------------
   const visualizeBtn = document.getElementById('visualizeBtn');
@@ -4391,6 +4873,9 @@
   }
   visualizeBtn.addEventListener('click', () => {
     state.showVisualize = !state.showVisualize;
+    // Hiding the panel also closes a listing's price history, so the next
+    // "Visualize Listings" opens on the whole-selection charts it names.
+    if (!state.showVisualize) closePriceHistoryForReload();
     applyVisualizeButtonUI();
     render();
   });
@@ -4520,88 +5005,238 @@
     applyYearModeUI();
     applyVisualizeButtonUI();
     applyWhatsNewButtonUI();
+    state.historyRow = null;
+    state.historyRange = 'all';
     setDataset('tea'); // also resets type/year and re-renders
     rebuildFilterOptions(); // refresh "active" highlight on site + type menus
+    // The search box is left alone. With no filters left, a search running
+    // "within filters" becomes a search of everything - which is also what
+    // stops render()'s filterSignature check reading the reset as a filter
+    // being touched.
+    state.searchScope = 'all';
+    lastFilterSignature = null;
     render();
   });
 
   // -------------------------------------------------------------------
   // Filtering + sorting + rendering the top 10
   // -------------------------------------------------------------------
-  function getFilteredSorted(){
-    let rows = allRows.filter(r => {
-      const isAccessory = ACCESSORY_CATEGORIES.has(r.category);
-      // Tea mode never shows Teaware/Tools and vice versa.
-      if (state.dataset === 'tea' && isAccessory) return false;
-      if (state.dataset === 'accessories' && !isAccessory) return false;
+  // Does row `r` pass every sidebar filter in `s`? `s` is the live `state`,
+  // or the Advanced search modal's draft (same field names) for its live
+  // "N listings match" count.
+  function rowPassesFilters(r, s){
+    const isAccessory = ACCESSORY_CATEGORIES.has(r.category);
+    // Tea mode never shows Teaware/Tools and vice versa.
+    if (s.dataset === 'tea' && isAccessory) return false;
+    if (s.dataset === 'accessories' && !isAccessory) return false;
 
-      if (!sitePassesFilter(r.site)) return false;
-      // Accessories "Category": a row passes if its whole category is ticked
-      // OR its own sub-category is. Both lists empty means no restriction.
-      if (state.dataset === 'accessories'
-          && (state.accessoryGroups.length > 0 || state.accessorySubs.length > 0)){
-        const groupPicked = state.accessoryGroups.includes(r.category);
-        const sub = accessorySubcategory(r);
-        const subPicked = sub !== null
-          && state.accessorySubs.includes(accessorySubKey(r.category, sub));
-        if (!groupPicked && !subPicked) return false;
+    if (!sitePassesFilter(r.site, s)) return false;
+    // Accessories "Category": a row passes if its whole category is ticked
+    // OR its own sub-category is. Both lists empty means no restriction.
+    if (s.dataset === 'accessories'
+        && (s.accessoryGroups.length > 0 || s.accessorySubs.length > 0)){
+      const groupPicked = s.accessoryGroups.includes(r.category);
+      const sub = accessorySubcategory(r);
+      const subPicked = sub !== null
+        && s.accessorySubs.includes(accessorySubKey(r.category, sub));
+      if (!groupPicked && !subPicked) return false;
+    }
+    // "See what's new": product_url absent from the previous run (same
+    // logic as get_new_listings() in tea_db.py).
+    if (s.showWhatsNew && (!newListingUrls || !newListingUrls.has(r.product_url))) return false;
+    // Type/Year are tea-only; guarded here in case state drifts.
+    if (s.dataset === 'tea'){
+      if (s.types.length > 0 && !s.types.includes(r.category)) return false;
+      // Flavor Profile: see rowPassesFlavorFilter().
+      if (!rowPassesFlavorFilter(r, s)) return false;
+      // Form factor: no value never matches once the filter is active.
+      if (s.formFactors.length > 0 && !s.formFactors.includes(r.form_factor)) return false;
+      if (s.yearMode === 'range'){
+        // No parsed year can never match a range.
+        if (s.yearFrom !== null && (r.year === null || r.year < s.yearFrom)) return false;
+        if (s.yearTo !== null && (r.year === null || r.year > s.yearTo)) return false;
+      } else if (s.year !== 'all' && String(r.year) !== s.year) {
+        return false;
       }
-      // "See what's new": product_url absent from the previous run (same
-      // logic as get_new_listings() in tea_db.py).
-      if (state.showWhatsNew && (!newListingUrls || !newListingUrls.has(r.product_url))) return false;
-      // Type/Year are tea-only; guarded here in case state drifts.
-      if (state.dataset === 'tea'){
-        if (state.types.length > 0 && !state.types.includes(r.category)) return false;
-        // Flavor Profile: see rowPassesFlavorFilter().
-        if (!rowPassesFlavorFilter(r)) return false;
-        // Form factor: no value never matches once the filter is active.
-        if (state.formFactors.length > 0 && !state.formFactors.includes(r.form_factor)) return false;
-        if (state.yearMode === 'range'){
-          // No parsed year can never match a range.
-          if (state.yearFrom !== null && (r.year === null || r.year < state.yearFrom)) return false;
-          if (state.yearTo !== null && (r.year === null || r.year > state.yearTo)) return false;
-        } else if (state.year !== 'all' && String(r.year) !== state.year) {
-          return false;
-        }
-        // No parsed weight can't match a bound, so the row is excluded - but
-        // a MINIMUM of 0 is not a real bound ("at least nothing" excludes
-        // nothing), and treating it as one hid every listing whose weight the
-        // scraper couldn't parse. Those are real teas, often the only ones a
-        // form factor has: Jesse's tea resins sell as "1 Tin (20 Tea Resins)"
-        // and state no grams at all, so a 0 in the Min box emptied the Tea
-        // Resin view of everything but Yunnan Sourcing's kilogram bags.
-        if (state.gramsFrom !== null && state.gramsFrom > 0 &&
-            (r.weight_grams === null || r.weight_grams < state.gramsFrom)) return false;
-        if (state.gramsTo !== null && (r.weight_grams === null || r.weight_grams > state.gramsTo)) return false;
+      // No parsed weight can't match a bound, so the row is excluded - but
+      // a MINIMUM of 0 is not a real bound ("at least nothing" excludes
+      // nothing), and treating it as one hid every listing whose weight the
+      // scraper couldn't parse. Those are real teas, often the only ones a
+      // form factor has: Jesse's tea resins sell as "1 Tin (20 Tea Resins)"
+      // and state no grams at all, so a 0 in the Min box emptied the Tea
+      // Resin view of everything but Yunnan Sourcing's kilogram bags.
+      if (s.gramsFrom !== null && s.gramsFrom > 0 &&
+          (r.weight_grams === null || r.weight_grams < s.gramsFrom)) return false;
+      if (s.gramsTo !== null && (r.weight_grams === null || r.weight_grams > s.gramsTo)) return false;
+    }
+    // Price range. Deliberately OUTSIDE the tea-only block (unlike
+    // weight): price_usd is meaningful for Teaware/Tools too.
+    if (s.priceFrom !== null && (r.price_usd === null || r.price_usd < s.priceFrom)) return false;
+    if (s.priceTo !== null && (r.price_usd === null || r.price_usd > s.priceTo)) return false;
+    if (s.stock === 'in' && !r.in_stock) return false;
+    if (s.stock === 'out' && r.in_stock) return false;
+    // isTylersPick() is false for rows with no entry, so this is safe
+    // regardless of dataset.
+    if (s.tylersPickOnly && !isTylersPick(r)) return false;
+    return true;
+  }
+
+  // -------------------------------------------------------------------
+  // Keyword search.
+  //
+  // Text is folded before matching - accents off, lowercase, punctuation to
+  // spaces, and the many spellings of pu-erh to one - so "Pu'er", "pu-erh"
+  // and "puerh" all find each other, and "Crème" finds "creme".
+  //
+  // A keyword matches at the START of a word: "yiwu" finds "Yiwu" and
+  // "Yiwushan", "ash" does not find "washed". Every keyword must match
+  // (AND); a -word excludes; "a quoted phrase" must appear as written.
+  // -------------------------------------------------------------------
+  function normalizeSearchText(str){
+    return String(str === null || str === undefined ? '' : str)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/['\u2019`]/g, '')          // pu'er -> puer, jesse's -> jesses
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\bpu ?erh?\b/g, 'puer')     // pu erh / puerh / pu er -> puer
+      .trim();
+  }
+
+  // Extra words each tea type answers to, so "sheng" or "shou" find a
+  // listing whose title only says "raw" or "ripe" but whose type does.
+  const CATEGORY_SEARCH_WORDS = {
+    'Raw Puer': 'raw puer sheng', 'Ripe Puer': 'ripe puer shou', 'Heicha': 'heicha dark tea',
+    'Black': 'black red tea hong cha', 'Tea Pet': 'tea pet', 'Merch': 'merch apparel',
+  };
+
+  // Two folded strings per row, built once and cached: the title (with the
+  // variant) and everything else a keyword may match - shop, type,
+  // sub-category, form factor, tasting notes, year. Each is padded with
+  // spaces so a word-start test is a plain includes(' ' + word).
+  function searchFieldsForRow(r){
+    if (r._search) return r._search;
+    const title = ' ' + normalizeSearchText(r.product_title + ' ' + (r.variant_title || '')) + ' ';
+    const other = ' ' + normalizeSearchText([
+      r.site, r.category, CATEGORY_SEARCH_WORDS[r.category] || '',
+      accessorySubcategory(r) || '', r.form_factor, r.notes,
+      r.year === null || r.year === undefined ? '' : r.year,
+    ].join(' ')) + ' ';
+    r._search = { title, other };
+    return r._search;
+  }
+
+  // Query text -> { include: [...], exclude: [...] } of folded terms, or null
+  // when there is nothing to search for.
+  function parseSearchQuery(text){
+    const include = [], exclude = [];
+    const re = /(-?)"([^"]*)"?|(\S+)/g;
+    let m;
+    while ((m = re.exec(String(text || ''))) !== null){
+      let neg, raw;
+      if (m[2] !== undefined){ neg = m[1] === '-'; raw = m[2]; }
+      else {
+        raw = m[3];
+        neg = raw.length > 1 && raw[0] === '-';
+        if (neg) raw = raw.slice(1);
       }
-      // Price range. Deliberately OUTSIDE the tea-only block (unlike
-      // weight): price_usd is meaningful for Teaware/Tools too.
-      if (state.priceFrom !== null && (r.price_usd === null || r.price_usd < state.priceFrom)) return false;
-      if (state.priceTo !== null && (r.price_usd === null || r.price_usd > state.priceTo)) return false;
-      if (state.stock === 'in' && !r.in_stock) return false;
-      if (state.stock === 'out' && r.in_stock) return false;
-      // isTylersPick() is false for rows with no entry, so this is safe
-      // regardless of dataset.
-      if (state.tylersPickOnly && !isTylersPick(r)) return false;
+      const term = normalizeSearchText(raw);
+      if (!term) continue;
+      (neg ? exclude : include).push(term);
+    }
+    return (include.length || exclude.length) ? { include, exclude } : null;
+  }
+
+  // The search currently in force, or null. Cached per query string, since
+  // render() asks on every redraw.
+  let parsedSearchCache = { text: null, parsed: null };
+  function activeSearch(){
+    if (parsedSearchCache.text !== state.searchQuery){
+      parsedSearchCache = { text: state.searchQuery, parsed: parseSearchQuery(state.searchQuery) };
+    }
+    return parsedSearchCache.parsed;
+  }
+
+  // Is a search of ALL listings running, with the sidebar filters paused?
+  function searchPausesFilters(){
+    return !!activeSearch() && state.searchScope === 'all';
+  }
+
+  // How well row `r` matches `search`: 0 = not a match; higher = better.
+  // This is what "priority to keywords" means in the results: listings are
+  // ordered by this score first, and the sort buttons only break ties.
+  //   whole word in the title  6    word start in the title  4
+  //   whole word elsewhere     2    word start elsewhere     1
+  // plus 3 when every keyword is in the title, and 5 more when the keywords
+  // appear there together, in order, as typed.
+  function rowSearchScore(r, search, titlesOnly){
+    const f = searchFieldsForRow(r);
+    const hay = titlesOnly ? f.title : f.title + f.other;
+    for (const t of search.exclude){
+      if (hay.includes(' ' + t)) return 0;
+    }
+    if (search.include.length === 0) return 1;  // only exclusions - all equal
+    let score = 0, allInTitle = true;
+    for (const t of search.include){
+      if (f.title.includes(' ' + t + ' ')) score += 6;
+      else if (f.title.includes(' ' + t)) score += 4;
+      else {
+        allInTitle = false;
+        if (titlesOnly) return 0;
+        if (f.other.includes(' ' + t + ' ')) score += 2;
+        else if (f.other.includes(' ' + t)) score += 1;
+        else return 0;
+      }
+    }
+    if (allInTitle){
+      score += 3;
+      if (search.include.length > 1 && f.title.includes(' ' + search.include.join(' '))) score += 5;
+    }
+    return score;
+  }
+
+  // The sort-button order, shared by the filtered view and search ties.
+  // Accessories always sort by plain price - price-per-gram and weight mean
+  // nothing for a teapot. `mixed` (a search of all listings) holds both, so
+  // each row uses the key that suits it.
+  function sortKeyFor(r, mixed){
+    const isAccessory = mixed ? ACCESSORY_CATEGORIES.has(r.category) : state.dataset === 'accessories';
+    if (isAccessory) return r.price_usd;
+    const key = { price: 'price_per_gram', grams: 'weight_grams', year: 'year' }[state.sortField] || 'price_per_gram';
+    return r[key];
+  }
+
+  function getFilteredSorted(){
+    const search = activeSearch();
+    const useFilters = !search || state.searchScope === 'filters';
+    const mixed = !useFilters;
+    let rows = allRows.filter(r => {
+      if (useFilters && !rowPassesFilters(r, state)) return false;
+      if (search){
+        const score = rowSearchScore(r, search, state.searchTitlesOnly);
+        if (score === 0) return false;
+        r._score = score;
+      }
       return true;
     });
 
-    // Accessories always sort by plain price - price-per-gram and weight
-    // mean nothing for a teapot.
-    const key = state.dataset === 'accessories'
-      ? 'price_usd'
-      : ({ price: 'price_per_gram', grams: 'weight_grams', year: 'year' }[state.sortField] || 'price_per_gram');
+    const yearSort = !mixed && state.dataset !== 'accessories' && state.sortField === 'year';
 
     // Rows missing the sort field sink to the bottom in either direction.
     // Year ties are common (a whole shelf of 2024 sheng), so within one year
-    // the cheapest per gram comes first.
+    // the cheapest per gram comes first. With a search running, the keyword
+    // score outranks all of it.
     rows.sort((a, b) => {
-      const av = a[key], bv = b[key];
+      if (search && a._score !== b._score) return b._score - a._score;
+      // In a search of everything, in-stock listings come before sold-out
+      // ones of the same score - the filter that normally hides them is off.
+      if (mixed && a.in_stock !== b.in_stock) return a.in_stock ? -1 : 1;
+      const av = sortKeyFor(a, mixed), bv = sortKeyFor(b, mixed);
       if (av === null && bv === null) return 0;
       if (av === null) return 1;
       if (bv === null) return -1;
       const primary = state.sortDir === 'asc' ? av - bv : bv - av;
-      if (primary !== 0 || key !== 'year') return primary;
+      if (primary !== 0 || !yearSort) return primary;
       const ap = a.price_per_gram, bp = b.price_per_gram;
       if (ap === null && bp === null) return 0;
       if (ap === null) return 1;
@@ -5145,14 +5780,332 @@
     return wrap;
   }
 
+  // -------------------------------------------------------------------
+  // Price history ("See price history" on a listing).
+  //
+  // The database stores a price only when it CHANGES (tea_db.py's
+  // price_history), which is what lets years of weekly runs fit in a few
+  // kilobytes. price_hist on a row is that series, compacted for the page:
+  //
+  //     "20709"                   first seen on day 20709, price unchanged
+  //                               since - it is still today's price_usd
+  //     "20709:24.5,20723:27"     $24.50 from day 20709, $27 from day 20723
+  //
+  // Days count from 1970-01-01 (UTC). So the chart is a step line: each price
+  // holds until the next change, and the last one runs to the newest run.
+  // -------------------------------------------------------------------
+  const DAY_MS = 86400000;
+  const HISTORY_RANGES = [['all', 'All'], ['1y', '1 year'], ['6m', '6 months'], ['1m', '1 month']];
+  const HISTORY_RANGE_DAYS = { '1y': 365, '6m': 183, '1m': 30 };
+  const HISTORY_LINE_COLOR = '#D1A052';   // --amber
+
+  function dayFromIso(iso){
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+    return m ? Math.round(Date.UTC(+m[1], +m[2] - 1, +m[3]) / DAY_MS) : null;
+  }
+  function fmtDay(day, opts){
+    return new Date(day * DAY_MS).toLocaleDateString('en-US',
+      Object.assign({ month: 'short', day: 'numeric', timeZone: 'UTC' }, opts || {}));
+  }
+  function fmtDayLong(day){ return fmtDay(day, { year: 'numeric' }); }
+  function fmtUsd(v){ return '$' + v.toFixed(2); }
+
+  // Parses r.price_hist once (cached on the row). Returns
+  // { points: [{ day, price }], endDay } or null.
+  function parsePriceHistory(r){
+    if (r._hist !== undefined) return r._hist;
+    let points = [];
+    String(r.price_hist || '').split(',').forEach(part => {
+      const [d, p] = part.split(':');
+      const day = parseInt(d, 10);
+      if (Number.isNaN(day)) return;
+      const price = p === undefined ? r.price_usd : parseFloat(p);
+      if (price === null || price === undefined || Number.isNaN(price)) return;
+      points.push({ day, price });
+    });
+    points.sort((a, b) => a.day - b.day);
+    if (!points.length){ r._hist = null; return null; }
+    const runDay = dayFromIso(dbCurrentRunDate);
+    const endDay = Math.max(runDay === null ? points[points.length - 1].day : runDay, points[points.length - 1].day);
+    r._hist = { points, endDay };
+    return r._hist;
+  }
+
+  // Round-number axis ticks: steps of 1, 2, 2.5 or 5 times a power of ten.
+  function niceTicks(min, max, count){
+    const raw = (max - min) / Math.max(1, count);
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) || raw;
+    const out = [];
+    for (let v = Math.ceil(min / step) * step; v <= max + step * 1e-6; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+
+  // Date ticks for [start, end]: weekly for a month or so, otherwise the
+  // first of each month (every other month, or quarter, once it gets long).
+  function historyDateTicks(start, end, narrow){
+    const span = end - start;
+    const ticks = [];
+    if (span <= 50){
+      const step = span <= 12 ? 2 : 7;
+      for (let d = end; d >= start; d -= step) ticks.unshift({ day: d, label: fmtDay(d) });
+      return ticks;
+    }
+    const months = span / 30.4;
+    const want = narrow ? 4 : 8;
+    const stepMonths = [1, 2, 3, 6, 12].find(s => months / s <= want) || 12;
+    const d0 = new Date(start * DAY_MS);
+    let y = d0.getUTCFullYear(), mo = d0.getUTCMonth() + 1;
+    let first = true;
+    for (;;){
+      if (mo > 11){ y += Math.floor(mo / 12); mo %= 12; }
+      const day = Math.round(Date.UTC(y, mo, 1) / DAY_MS);
+      if (day > end) break;
+      if (mo % stepMonths === 0 || stepMonths === 1){
+        ticks.push({ day, label: fmtDay(day, { day: undefined, year: (first || mo === 0) ? 'numeric' : undefined }) });
+        first = false;
+      }
+      mo += 1;
+    }
+    return ticks;
+  }
+
+  function openPriceHistory(r){
+    if (state.vizChart !== 'history') state.vizChartBeforeHistory = state.vizChart;
+    state.vizChart = 'history';
+    state.historyRow = r;
+    state.showVisualize = true;
+    applyVisualizeButtonUI();
+    render();
+    const panel = document.querySelector('.visualize-panel');
+    if (panel) panel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+  function closePriceHistoryForReload(){
+    if (state.vizChart === 'history') state.vizChart = state.vizChartBeforeHistory || 'distribution';
+    state.historyRow = null;
+  }
+  function closePriceHistory(){
+    closePriceHistoryForReload();
+    render();
+  }
+
+  function buildPriceHistoryPanel(r){
+    const wrap = document.createElement('div');
+    wrap.className = 'visualize-panel';
+
+    const headerRow = document.createElement('div');
+    headerRow.className = 'viz-header-row';
+    const h3 = document.createElement('h3');
+    h3.textContent = 'Price history';
+    headerRow.appendChild(h3);
+
+    const toggles = document.createElement('div');
+    toggles.className = 'viz-toggle-group';
+    const group = document.createElement('div');
+    group.className = 'viz-range-group';
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', 'Time range');
+    HISTORY_RANGES.forEach(([key, label]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.classList.toggle('active', state.historyRange === key);
+      b.setAttribute('aria-pressed', String(state.historyRange === key));
+      b.addEventListener('click', () => { state.historyRange = key; render(); });
+      group.appendChild(b);
+    });
+    toggles.appendChild(group);
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'viz-xaxis-toggle';
+    closeBtn.textContent = 'Close price history';
+    closeBtn.title = 'Back to the chart of every matching listing';
+    closeBtn.addEventListener('click', closePriceHistory);
+    toggles.appendChild(closeBtn);
+    headerRow.appendChild(toggles);
+    wrap.appendChild(headerRow);
+
+    const titleLine = document.createElement('div');
+    titleLine.className = 'viz-history-title';
+    const link = document.createElement('a');
+    link.href = r.product_url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = r.product_title + (r.variant_title ? ' - ' + r.variant_title : '');
+    titleLine.appendChild(link);
+    titleLine.appendChild(document.createTextNode(' · ' + r.site));
+    wrap.appendChild(titleLine);
+
+    const hist = parsePriceHistory(r);
+    const sub = document.createElement('div');
+    sub.className = 'viz-sub';
+    wrap.appendChild(sub);
+    if (!hist){
+      sub.textContent = 'No price history recorded for this listing yet.';
+      return wrap;
+    }
+
+    const pts = hist.points;
+    const endDay = hist.endDay;
+    const firstDay = pts[0].day;
+    const totalChanges = pts.length - 1;
+    sub.textContent = 'Tracked since ' + fmtDayLong(firstDay) + ' · ' +
+      (totalChanges === 0 ? 'no price changes since then'
+        : totalChanges + ' price change' + (totalChanges === 1 ? '' : 's') + ' since then') +
+      ' · last checked ' + fmtDayLong(endDay);
+
+    // The window. "All" is the tracked span; the others are fixed windows
+    // ending at the newest run, even where tracking began later - that part
+    // is shaded "not tracked yet" rather than stretched to fill the width.
+    let startDay = state.historyRange === 'all' ? firstDay : endDay - HISTORY_RANGE_DAYS[state.historyRange];
+    // A listing first seen in the latest run has no span to draw across -
+    // give it a week of axis, shaded as not tracked yet.
+    if (endDay - startDay < 3) startDay = endDay - 7;
+
+    // Step segments [from, to, price] clipped to the window.
+    const segs = [];
+    pts.forEach((p, i) => {
+      const from = p.day, to = i + 1 < pts.length ? pts[i + 1].day : endDay;
+      if (to < startDay) return;
+      segs.push({ from: Math.max(from, startDay), to, price: p.price, changed: i > 0 && from >= startDay, prev: i > 0 ? pts[i - 1].price : null, day: from });
+    });
+    const prices = segs.map(s => s.price);
+    const lo = Math.min(...prices), hi = Math.max(...prices);
+    const pad = hi === lo ? Math.max(lo * 0.12, 0.5) : (hi - lo) * 0.18;
+    const yMin = Math.max(0, lo - pad), yMax = hi + pad;
+
+    // ---- stats ----
+    const nowPrice = pts[pts.length - 1].price;
+    const startPrice = segs[0].price;
+    const change = nowPrice - startPrice;
+    const pct = startPrice > 0 ? change / startPrice * 100 : null;
+    const changesInWindow = segs.filter(s => s.changed).length;
+    const grid = document.createElement('div');
+    grid.className = 'viz-stats-grid';
+    [
+      ['Now', fmtUsd(nowPrice)],
+      ['Lowest', fmtUsd(lo)],
+      ['Highest', fmtUsd(hi)],
+      ['Change', (change > 0 ? '+' : change < 0 ? '−' : '') + fmtUsd(Math.abs(change)) +
+        (pct !== null && change !== 0 ? ' (' + (pct > 0 ? '+' : '−') + Math.abs(pct).toFixed(1) + '%)' : '')],
+      ['Changes', String(changesInWindow)],
+      ['Per gram now', r.weight_grams ? '$' + (nowPrice / r.weight_grams).toFixed(3) + '/g' : '—'],
+    ].forEach(([label, value]) => {
+      const card = document.createElement('div');
+      card.className = 'viz-stat';
+      card.innerHTML = '<div class="viz-stat-label">' + label + '</div><div class="viz-stat-value">' + escapeXml(value) + '</div>';
+      grid.appendChild(card);
+    });
+    wrap.appendChild(grid);
+
+    // ---- chart ----
+    const narrow = vizIsNarrow();
+    const font = narrow ? 24 : 10;
+    const M = narrow ? { top: 20, right: 24, bottom: 62, left: 120 } : { top: 12, right: 20, bottom: 32, left: 58 };
+    const plotW = VIZ_WIDTH - M.left - M.right;
+    const plotH = narrow ? 460 : 240;
+    const H = M.top + plotH + M.bottom;
+    const xOf = d => M.left + (d - startDay) / (endDay - startDay) * plotW;
+    const yOf = v => M.top + (1 - (v - yMin) / (yMax - yMin)) * plotH;
+    const baseY = M.top + plotH;
+    let svg = '';
+
+    niceTicks(yMin, yMax, narrow ? 4 : 5).forEach(v => {
+      const y = yOf(v);
+      if (y < M.top - 1 || y > baseY + 1) return;
+      svg += '<line x1="' + M.left + '" x2="' + (M.left + plotW) + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) +
+        '" stroke="' + VIZ_LINE_COLOR + '" stroke-width="1" stroke-opacity="0.45"/>';
+      svg += '<text x="' + (M.left - 8) + '" y="' + (y + font * 0.35).toFixed(1) + '" text-anchor="end" font-size="' + font +
+        '" font-family="IBM Plex Mono, monospace" fill="' + VIZ_FAINT_COLOR + '">$' + (v >= 100 ? v.toFixed(0) : v.toFixed(2)) + '</text>';
+    });
+    svg += '<line x1="' + M.left + '" x2="' + (M.left + plotW) + '" y1="' + baseY + '" y2="' + baseY + '" stroke="' + VIZ_LINE_COLOR + '" stroke-width="1"/>';
+    historyDateTicks(startDay, endDay, narrow).forEach(t => {
+      const x = xOf(t.day);
+      svg += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + baseY + '" y2="' + (baseY + (narrow ? 12 : 6)) +
+        '" stroke="' + VIZ_FAINT_COLOR + '" stroke-width="' + (narrow ? 2 : 1) + '"/>';
+      svg += '<text x="' + x.toFixed(1) + '" y="' + (baseY + (narrow ? 42 : 19)) + '" text-anchor="middle" font-size="' + font +
+        '" font-family="IBM Plex Mono, monospace" fill="' + VIZ_FAINT_COLOR + '">' + escapeXml(t.label) + '</text>';
+    });
+
+    // Before tracking began: shaded, labelled, and no line through it.
+    if (firstDay > startDay){
+      const x1 = xOf(firstDay);
+      svg += '<rect x="' + M.left + '" y="' + M.top + '" width="' + (x1 - M.left).toFixed(1) + '" height="' + plotH +
+        '" fill="' + VIZ_LINE_COLOR + '" fill-opacity="0.22"/>';
+      if (x1 - M.left > (narrow ? 260 : 120)){
+        svg += '<text x="' + ((M.left + x1) / 2).toFixed(1) + '" y="' + (M.top + plotH / 2).toFixed(1) +
+          '" text-anchor="middle" font-size="' + font + '" font-family="IBM Plex Sans, sans-serif" fill="' + VIZ_FAINT_COLOR +
+          '">not tracked yet</text>';
+      }
+    }
+
+    // The step line, and a soft fill under it.
+    let d = '';
+    segs.forEach((s, i) => {
+      const x0 = xOf(s.from), x1 = xOf(s.to), y = yOf(s.price);
+      d += (i === 0 ? 'M' + x0.toFixed(1) + ' ' + y.toFixed(1) : 'V' + y.toFixed(1)) + 'H' + x1.toFixed(1);
+    });
+    const area = d + 'V' + baseY + 'H' + xOf(segs[0].from).toFixed(1) + 'Z';
+    svg += '<path d="' + area + '" fill="' + HISTORY_LINE_COLOR + '" fill-opacity="0.08"/>';
+    svg += '<path d="' + d + '" fill="none" stroke="' + HISTORY_LINE_COLOR + '" stroke-width="' + (narrow ? 4.5 : 2.2) +
+      '" stroke-linejoin="round"/>';
+
+    // A dot where each price began (first sighting and every change), and
+    // one on today's end of the line.
+    const dotR = narrow ? 7 : 3.6;
+    segs.forEach((s, i) => {
+      if (!(s.changed || (i === 0 && s.day >= startDay))) return;
+      let tip = fmtDayLong(s.day) + ': ' + fmtUsd(s.price);
+      if (s.changed && s.prev){
+        const c = (s.price - s.prev) / s.prev * 100;
+        tip += ' (' + (c > 0 ? '+' : '') + c.toFixed(1) + '% from ' + fmtUsd(s.prev) + ')';
+      } else {
+        tip += ' (first seen)';
+      }
+      svg += '<circle cx="' + xOf(s.from).toFixed(1) + '" cy="' + yOf(s.price).toFixed(1) + '" r="' + dotR +
+        '" fill="' + HISTORY_LINE_COLOR + '" stroke="' + VIZ_BG_COLOR + '" stroke-width="' + (narrow ? 2.5 : 1.3) + '"><title>' +
+        escapeXml(tip) + '</title></circle>';
+    });
+    // (Skipped when the price changed on that very run - its change dot is
+    // already there, and would be hidden under this one.)
+    if (segs[segs.length - 1].from < endDay){
+      svg += '<circle cx="' + xOf(endDay).toFixed(1) + '" cy="' + yOf(nowPrice).toFixed(1) + '" r="' + dotR +
+        '" fill="' + VIZ_BG_COLOR + '" stroke="' + HISTORY_LINE_COLOR + '" stroke-width="' + (narrow ? 3 : 1.6) + '"><title>' +
+        escapeXml(fmtDayLong(endDay) + ' (latest run): ' + fmtUsd(nowPrice)) + '</title></circle>';
+    }
+
+    const chart = document.createElement('div');
+    chart.className = 'viz-chart-wrap';
+    chart.innerHTML = '<svg viewBox="0 0 ' + VIZ_WIDTH + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' +
+      escapeXml('Price of ' + r.product_title + ' from ' + fmtDayLong(Math.max(startDay, firstDay)) + ' to ' + fmtDayLong(endDay) +
+      ': ' + fmtUsd(startPrice) + ' to ' + fmtUsd(nowPrice)) + '">' + svg + '</svg>';
+    wrap.appendChild(chart);
+
+    // A listing currently at $0 (a placeholder or a sold-out price) records
+    // no point - its line holds the last real price instead. Say so.
+    if (r.price_usd !== null && Math.abs(r.price_usd - nowPrice) > 0.004){
+      const note = document.createElement('div');
+      note.className = 'viz-split-note';
+      note.textContent = 'This listing shows ' + fmtUsd(r.price_usd) + ' today; $0 placeholder prices are not recorded, so the line holds its last real price.';
+      wrap.appendChild(note);
+    }
+    return wrap;
+  }
+
   function buildVisualizePanel(filtered){
+    // "See price history" takes over the panel for one listing, whatever the
+    // dataset - a teapot has a price history too.
+    if (state.vizChart === 'history' && state.historyRow){
+      return buildPriceHistoryPanel(state.historyRow);
+    }
     const isAccessory = state.dataset === 'accessories';
     // "Vintage year" means nothing for a teapot; second guard after
     // setDataset().
     const xMode = isAccessory ? 'price' : state.vizXAxis;
     // Teaware and tools carry no tasting notes, so the donut is tea-only and
     // the panel falls back to the dot plot there.
-    const chartMode = isAccessory ? 'distribution' : state.vizChart;
+    const chartMode = isAccessory ? 'distribution'
+      : (state.vizChart === 'history' ? 'distribution' : state.vizChart);
     const showNotes = chartMode === 'notes';
     const showScatter = chartMode === 'scatter';
     const axis = vizAxisDef(xMode, isAccessory);
@@ -5720,11 +6673,30 @@
     requestAnimationFrame(step);
   }
 
+  // A snapshot of every sidebar filter, to notice that one was changed. A
+  // search of ALL listings pauses the filters; touching one while it runs is
+  // a request to narrow that search, so render() then switches the search to
+  // "within filters" (see searchScope) rather than ignoring the click.
+  const FILTER_SIGNATURE_KEYS = ['dataset', 'sites', 'sitesExclude', 'types', 'year', 'yearMode',
+    'yearFrom', 'yearTo', 'stock', 'tylersPickOnly', 'gramsFrom', 'gramsTo', 'flavorCategories',
+    'flavorNotes', 'accessoryGroups', 'accessorySubs', 'formFactors', 'priceFrom', 'priceTo', 'showWhatsNew'];
+  function filterSignature(){
+    return JSON.stringify(FILTER_SIGNATURE_KEYS.map(k => state[k]));
+  }
+  let lastFilterSignature = null;
+
   function render(){
     renderToken++;
     const token = renderToken;
+    const signature = filterSignature();
+    if (lastFilterSignature !== null && signature !== lastFilterSignature && searchPausesFilters()){
+      state.searchScope = 'filters';
+    }
+    lastFilterSignature = signature;
     updateFiltersToggleLabel();
+    updateSearchUI();
     const filtered = getFilteredSorted();
+    updateSearchStatus(filtered.length);
     // state.showAll toggles top-10 vs every match. `displayed` renders;
     // filtered.length still drives the "N matching listings" counts.
     const displayed = state.showAll ? filtered : filtered.slice(0, 10);
@@ -5743,7 +6715,7 @@
     // pgSortedValues points at the dataset-wide globalPgSortedValues, so a
     // percentile doesn't shift with the active filters. null for
     // accessories, which have no price_per_gram.
-    const pgSortedValues = state.dataset === 'tea' ? globalPgSortedValues : null;
+    const pgSortedValues = (state.dataset === 'tea' || searchPausesFilters()) ? globalPgSortedValues : null;
 
     // The Visualize panel is rebuilt from the full filtered set, not the
     // sliced `displayed`, so its stats describe every match.
@@ -5754,14 +6726,23 @@
     if (displayed.length === 0){
       const empty = document.createElement('div');
       empty.className = 'empty-state';
-      empty.innerHTML = state.showWhatsNew
-        ? '<h2>No new listings</h2><p>Nothing in the most recent run is new compared to ' + dbPreviousRunDate + '. Try loosening a filter, or click "Back to all listings" to go back to all listings.</p>'
-        : '<h2>Nothing matches those filters</h2><p>Try loosening a filter or hitting "Reset all filters" on the left.</p>';
+      const search = activeSearch();
+      if (search){
+        empty.innerHTML = state.searchScope === 'filters'
+          ? '<h2>No matches</h2><p>Nothing within your current filters matches that search. Try fewer or different keywords, or search every listing with the link under the search box.</p>'
+          : '<h2>No matches</h2><p>No listing matches that search. Try fewer keywords, or a different spelling.</p>';
+      } else {
+        empty.innerHTML = state.showWhatsNew
+          ? '<h2>No new listings</h2><p>Nothing in the most recent run is new compared to ' + dbPreviousRunDate + '. Try loosening a filter, or click "Back to all listings" to go back to all listings.</p>'
+          : '<h2>Nothing matches those filters</h2><p>Try loosening a filter or hitting "Reset all filters" on the left.</p>';
+      }
       body.appendChild(empty);
       return;
     }
 
-    const sortLabel = state.dataset === 'accessories'
+    const sortLabel = activeSearch()
+      ? 'best match'
+      : state.dataset === 'accessories'
       ? 'price'
       : state.sortField === 'year'
         ? ('year, ' + (state.sortDir === 'desc' ? 'newest' : 'oldest') + ' first')
@@ -6008,6 +6989,25 @@
       priceCol.appendChild(detailLine);
     }
 
+    // "See price history" - quiet on purpose: every row has one, so it is
+    // small faint text rather than a button that competes with the price.
+    // Only offered when the loaded database carries history (price_hist).
+    if (r.price_hist){
+      const histLine = document.createElement('div');
+      histLine.className = 'history-line';
+      const histBtn = document.createElement('button');
+      histBtn.type = 'button';
+      const isOpen = state.showVisualize && state.vizChart === 'history' && state.historyRow === r;
+      histBtn.className = 'history-link' + (isOpen ? ' active' : '');
+      histBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">' +
+        '<path d="M1.5 12.5L5.5 8L8.5 10.5L14.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        '<span>' + (isOpen ? 'Showing price history' : 'See price history') + '</span>';
+      histBtn.title = 'Chart this listing\'s price over time, above the listings';
+      histBtn.addEventListener('click', () => openPriceHistory(r));
+      histLine.appendChild(histBtn);
+      priceCol.appendChild(histLine);
+    }
+
     el.appendChild(priceCol);
 
     return el;
@@ -6031,6 +7031,7 @@
     const reader = new FileReader();
     reader.onload = (evt) => {
       allRows = rowsFromCSVText(evt.target.result);
+      closePriceHistoryForReload();
       computeGlobalPgSortedValues();
       // Loading a CSV clears what a previous .db left behind, so "See
       // what's new" goes back to disabled with no stale run dates.
@@ -6077,7 +7078,8 @@
           iForm = col('form_factor'), iPrice = col('price_usd'),
           iGrams = col('weight_grams'), iPg = col('price_per_gram'),
           iYear = col('year'), iStock = col('in_stock'), iUrl = col('product_url'),
-          iVariantId = col('variant_id'), iNotes = col('notes');
+          iVariantId = col('variant_id'), iNotes = col('notes'),
+          iHist = col('price_hist');
 
     allRows = values.map(v => ({
       site: v[iSite] || 'Unknown',
@@ -6097,7 +7099,11 @@
         ? null : String(v[iVariantId]),
       // See rowsFromCSVText(); same not-present handling, defaulting to ''.
       notes: (iNotes === -1 || v[iNotes] === null || v[iNotes] === undefined) ? '' : String(v[iNotes]),
+      // Compact price history, parsed only when its chart is opened. null
+      // for an older database, which then shows no "See price history".
+      price_hist: (iHist === -1 || v[iHist] === null || v[iHist] === undefined) ? null : String(v[iHist]),
     }));
+    closePriceHistoryForReload();
 
     // Newest-first, decided by the query; `allRows` is already that one run.
     dbRunDates = (runDates || []).filter(Boolean);
@@ -6161,6 +7167,11 @@
         const select = (columns) => db.exec('SELECT ' + columns + where, [currentRunDate]);
         let result;
         try {
+          // price_hist: the compact price history (see parsePriceHistory()),
+          // in databases published since V3.6.
+          result = select(BASE_COLUMNS + ', variant_id, notes, price_hist');
+        } catch (e0){
+        try {
           result = select(BASE_COLUMNS + ', variant_id, notes');
         } catch (e){
           try {
@@ -6168,6 +7179,7 @@
           } catch (e2){
             result = select(BASE_COLUMNS);
           }
+        }
         }
 
         let previousUrls = null;
@@ -7076,6 +8088,366 @@
   document.getElementById('cartModalCloseBtn').addEventListener('click', () => { cartModalOverlay.hidden = true; });
   cartModalOverlay.addEventListener('click', (e) => { if (e.target === cartModalOverlay) cartModalOverlay.hidden = true; });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !cartModalOverlay.hidden) cartModalOverlay.hidden = true; });
+
+  // ===================================================================
+  // Advanced search: keywords + every sidebar filter in one form.
+  //
+  // The form edits a DRAFT (advDraft) with the same field names as `state`,
+  // so rowPassesFilters() can test it directly - that is what drives the live
+  // "N listings match" count. The page itself is untouched until "Search",
+  // which copies the draft onto `state`, puts the keywords in the search box,
+  // and sets searchScope to 'filters' so the two apply together, keyword
+  // score first (see rowSearchScore()).
+  // ===================================================================
+  const advOverlay = document.getElementById('advSearchModalOverlay');
+  const advKeywordsInput = document.getElementById('advKeywordsInput');
+  const advExcludeInput = document.getElementById('advExcludeInput');
+  const ADV_NUMBER_FIELDS = {
+    advYearFromInput: ['yearFrom', v => parseInt(v, 10)],
+    advYearToInput: ['yearTo', v => parseInt(v, 10)],
+    advGramsFromInput: ['gramsFrom', parseFloat],
+    advGramsToInput: ['gramsTo', parseFloat],
+    advPriceFromInput: ['priceFrom', parseFloat],
+    advPriceToInput: ['priceTo', parseFloat],
+  };
+  let advDraft = null;
+  let advTitlesOnly = false;
+
+  // What "Reset all filters" in the modal goes back to: the same defaults
+  // as the sidebar's own reset. Keywords are NOT filters and are kept.
+  function advDefaultFilters(){
+    return {
+      dataset: 'tea', sites: [], sitesExclude: false, types: [], year: 'all', yearMode: 'range',
+      yearFrom: null, yearTo: null, stock: 'in', tylersPickOnly: false, gramsFrom: null, gramsTo: null,
+      flavorCategories: [], flavorNotes: [], accessoryGroups: [], accessorySubs: [], formFactors: [],
+      priceFrom: null, priceTo: null, showWhatsNew: false,
+    };
+  }
+
+  // The dashboard's current filters as a draft. Two translations: an
+  // "Exclude Selection" website list becomes the plain list of sites it lets
+  // through (the form has no exclude mode, like the cart), and a single
+  // chosen year becomes the range [Y, Y].
+  function advDraftFromState(){
+    const d = {};
+    FILTER_SIGNATURE_KEYS.forEach(k => { d[k] = Array.isArray(state[k]) ? [...state[k]] : state[k]; });
+    d.sites = effectiveIncludedSites();
+    d.sitesExclude = false;
+    if (state.yearMode !== 'range'){
+      const y = state.year === 'all' ? null : parseInt(state.year, 10);
+      d.yearFrom = y; d.yearTo = y;
+    }
+    d.yearMode = 'range';
+    d.year = 'all';
+    return d;
+  }
+
+  // Search-box text <-> the modal's two keyword boxes. Quoted phrases stay
+  // quoted; a -word goes to "Leave out words" and back.
+  function splitQueryForModal(text){
+    const keep = [], leave = [];
+    const re = /(-?)"([^"]*)"?|(\S+)/g;
+    let m;
+    while ((m = re.exec(String(text || ''))) !== null){
+      if (m[2] !== undefined){
+        if (!m[2].trim()) continue;
+        (m[1] === '-' ? leave : keep).push('"' + m[2] + '"');
+      } else if (m[3].length > 1 && m[3][0] === '-'){
+        leave.push(m[3].slice(1));
+      } else {
+        keep.push(m[3]);
+      }
+    }
+    return { keywords: keep.join(' '), exclude: leave.join(' ') };
+  }
+  function composeQueryFromModal(){
+    const keywords = advKeywordsInput.value.trim();
+    const re = /"([^"]*)"?|(\S+)/g;
+    const leave = [];
+    let m;
+    while ((m = re.exec(advExcludeInput.value)) !== null){
+      if (m[1] !== undefined){ if (m[1].trim()) leave.push('-"' + m[1] + '"'); }
+      else leave.push('-' + m[2].replace(/^-+/, ''));
+    }
+    return [keywords, ...leave].filter(Boolean).join(' ');
+  }
+
+  // One checkbox row in a modal box. `opts`: label, checked, onToggle, and
+  // optional site (favicon), swatch (color dot), sub (indented).
+  function advOption(box, opts){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cart-checkbox-option' + (opts.sub ? ' adv-option-sub' : '');
+    const checkbox = document.createElement('span');
+    checkbox.className = 'type-checkbox' + (opts.checked ? ' checked' : '');
+    checkbox.textContent = opts.checked ? '✓' : '';
+    btn.appendChild(checkbox);
+    if (opts.site) btn.appendChild(faviconEl(opts.site));
+    if (opts.swatch){
+      const dot = document.createElement('span');
+      dot.className = 'flavor-swatch-dot';
+      dot.style.background = opts.swatch;
+      btn.appendChild(dot);
+    }
+    const span = document.createElement('span');
+    span.textContent = opts.label;
+    btn.appendChild(span);
+    btn.addEventListener('click', () => {
+      opts.onToggle();
+      renderAdvBoxes();
+      scheduleAdvCount();
+    });
+    box.appendChild(btn);
+  }
+  function toggleIn(arr, value){
+    const i = arr.indexOf(value);
+    if (i === -1) arr.push(value); else arr.splice(i, 1);
+  }
+  function fillAdvBox(id, build, emptyText){
+    const box = document.getElementById(id);
+    const scroll = box.scrollTop;
+    box.innerHTML = '';
+    build(box);
+    if (!box.children.length) box.innerHTML = '<div class="cart-empty-note">' + emptyText + '</div>';
+    box.scrollTop = scroll;
+  }
+
+  function renderAdvBoxes(){
+    const d = advDraft;
+    const noData = allRows.length ? 'Nothing to choose from in the loaded data.' : 'No data loaded yet.';
+    const sites = currentSites;
+
+    fillAdvBox('advSiteBox', box => sites.forEach(site => advOption(box, {
+      label: site, site, checked: d.sites.includes(site), onToggle: () => toggleIn(d.sites, site),
+    })), noData);
+    fillAdvBox('advTypeBox', box => currentTeaTypes.forEach(t => advOption(box, {
+      label: t, swatch: categoryColor(t), checked: d.types.includes(t), onToggle: () => toggleIn(d.types, t),
+    })), noData);
+    fillAdvBox('advFormFactorBox', box => currentFormFactors.forEach(f => advOption(box, {
+      label: f, checked: d.formFactors.includes(f), onToggle: () => toggleIn(d.formFactors, f),
+    })), noData);
+    // Flavor categories present in the data, plus any individual tasting
+    // notes ticked in the sidebar's Advanced Flavor Search - listed so they
+    // can be seen and unticked here rather than narrowing results unseen.
+    fillAdvBox('advFlavorBox', box => {
+      ALL_FLAVOR_CATEGORIES.filter(c => currentFlavorNotes.has(c)).forEach(c => advOption(box, {
+        label: c, swatch: flavorCategoryColor(c), checked: d.flavorCategories.includes(c),
+        onToggle: () => toggleIn(d.flavorCategories, c),
+      }));
+      d.flavorNotes.slice().forEach(key => advOption(box, {
+        label: noteLabel(key) + ' (note)', swatch: noteColor(key), checked: true, sub: true,
+        onToggle: () => toggleIn(d.flavorNotes, key),
+      }));
+    }, allRows.length ? 'No tasting notes in the loaded data.' : 'No data loaded yet.');
+    // Same two-level rules as the sidebar Category menu: the whole group and
+    // one of its sub-categories are never both ticked.
+    fillAdvBox('advAccessoryBox', box => currentAccessoryGroups.forEach(g => {
+      advOption(box, {
+        label: accessoryGroupLabel(g.category), checked: d.accessoryGroups.includes(g.category),
+        onToggle: () => {
+          toggleIn(d.accessoryGroups, g.category);
+          if (d.accessoryGroups.includes(g.category)){
+            d.accessorySubs = d.accessorySubs.filter(k => !k.startsWith(g.category + '|'));
+          }
+        },
+      });
+      g.subs.forEach(sub => {
+        const key = accessorySubKey(g.category, sub);
+        advOption(box, {
+          label: sub, sub: true, checked: d.accessorySubs.includes(key),
+          onToggle: () => {
+            toggleIn(d.accessorySubs, key);
+            if (d.accessorySubs.includes(key)) d.accessoryGroups = d.accessoryGroups.filter(c => c !== g.category);
+          },
+        });
+      });
+    }), noData);
+  }
+
+  // Everything in the form that isn't a checkbox box: the three button
+  // pairs, the number boxes, and which dataset's fields are visible.
+  function renderAdvControls(){
+    const d = advDraft;
+    const setPair = (id, value) => document.querySelectorAll('#' + id + ' .sort-btn')
+      .forEach(b => b.classList.toggle('active', b.dataset.value === value));
+    setPair('advDatasetPair', d.dataset);
+    setPair('advStockPair', d.stock);
+    setPair('advMatchInPair', advTitlesOnly ? 'titles' : 'all');
+    const isTea = d.dataset === 'tea';
+    advOverlay.querySelectorAll('.adv-tea-only').forEach(el => { el.hidden = !isTea; });
+    advOverlay.querySelectorAll('.adv-accessory-only').forEach(el => { el.hidden = isTea; });
+    Object.entries(ADV_NUMBER_FIELDS).forEach(([id, [field]]) => {
+      document.getElementById(id).value = d[field] === null || d[field] === undefined ? '' : String(d[field]);
+    });
+    document.getElementById('advTylersPickToggle').classList.toggle('state-tylers', d.tylersPickOnly);
+  }
+
+  // Live count of what "Search" would show. Debounced: typing a keyword
+  // shouldn't re-scan every listing per letter.
+  let advCountTimer = null;
+  function scheduleAdvCount(){
+    clearTimeout(advCountTimer);
+    advCountTimer = setTimeout(updateAdvCount, 200);
+  }
+  function updateAdvCount(){
+    const el = document.getElementById('advMatchCount');
+    if (!advDraft || allRows.length === 0){ el.textContent = ''; return; }
+    const search = parseSearchQuery(composeQueryFromModal());
+    let n = 0;
+    for (const r of allRows){
+      if (!rowPassesFilters(r, advDraft)) continue;
+      if (search && rowSearchScore(r, search, advTitlesOnly) === 0) continue;
+      n++;
+    }
+    el.innerHTML = '<strong>' + n + '</strong> listing' + (n === 1 ? '' : 's') + ' match';
+  }
+
+  function showAdvError(msg){
+    const el = document.getElementById('advSearchErrorMsg');
+    el.hidden = !msg;
+    el.textContent = msg || '';
+  }
+
+  function openAdvancedSearch(){
+    // Pick up anything typed in the search box that hasn't applied yet.
+    clearTimeout(searchTimer);
+    if (searchInput.value !== state.searchQuery){
+      state.searchQuery = searchInput.value;
+      render();
+    }
+    advDraft = advDraftFromState();
+    advTitlesOnly = state.searchTitlesOnly;
+    const parts = splitQueryForModal(state.searchQuery);
+    advKeywordsInput.value = parts.keywords;
+    advExcludeInput.value = parts.exclude;
+    showAdvError(null);
+    renderAdvControls();
+    renderAdvBoxes();
+    advOverlay.hidden = false;
+    // Show the first ticked box in each list - a tick below the fold reads as
+    // a filter that didn't carry over. Only measurable once visible.
+    advOverlay.querySelectorAll('.cart-checkbox-box').forEach(box => {
+      const first = box.querySelector('.type-checkbox.checked');
+      const option = first && first.closest('.cart-checkbox-option');
+      box.scrollTop = option ? Math.max(0, option.offsetTop - box.offsetTop - 4) : 0;
+    });
+    updateAdvCount();
+    advKeywordsInput.focus();
+  }
+  function closeAdvancedSearch(){ advOverlay.hidden = true; }
+
+  // Copies every sidebar control from `state` - after Advanced search
+  // rewrote it in one go.
+  function syncSidebarFromState(){
+    renderSiteMenu();
+    renderTypeMenu();
+    renderFlavorMenu();
+    renderFormFactorMenu();
+    renderAccessoryMenu();
+    document.getElementById('yearSelect').value = state.year;
+    const setBox = (id, v) => { document.getElementById(id).value = v === null ? '' : String(v); };
+    setBox('yearFromInput', state.yearFrom);
+    setBox('yearToInput', state.yearTo);
+    setBox('gramsFromInput', state.gramsFrom);
+    setBox('gramsToInput', state.gramsTo);
+    setBox('priceFromInput', state.priceFrom);
+    setBox('priceToInput', state.priceTo);
+    applyStockButtonUI();
+    applyTylersPickButtonUI();
+    applyYearModeUI();
+    applyWhatsNewButtonUI();
+  }
+
+  function applyAdvancedSearch(){
+    const d = advDraft;
+    if (d.yearFrom !== null && d.yearTo !== null && d.yearFrom > d.yearTo) return showAdvError("The From year can't be after the To year.");
+    if (d.gramsFrom !== null && d.gramsTo !== null && d.gramsFrom > d.gramsTo) return showAdvError("The minimum weight can't be more than the maximum.");
+    if (d.priceFrom !== null && d.priceTo !== null && d.priceFrom > d.priceTo) return showAdvError("The minimum price can't be more than the maximum.");
+    showAdvError(null);
+
+    // setDataset() clears every dataset-specific filter, so it goes FIRST and
+    // the draft's values are laid over what it leaves.
+    if (d.dataset !== state.dataset) setDataset(d.dataset);
+    FILTER_SIGNATURE_KEYS.forEach(k => {
+      if (k === 'dataset') return;
+      state[k] = Array.isArray(d[k]) ? [...d[k]] : d[k];
+    });
+    state.sitesExclude = false;
+    // No year bounds = the plain "All years" dropdown; any bound = range mode.
+    state.year = 'all';
+    state.yearMode = (d.yearFrom === null && d.yearTo === null) ? 'single' : 'range';
+    // Individual notes only exist while their list is showing.
+    if (state.flavorNotes.length) state.flavorAdvanced = true;
+
+    state.searchQuery = composeQueryFromModal();
+    parsedSearchCache = { text: null, parsed: null };
+    state.searchTitlesOnly = advTitlesOnly && !!activeSearch();
+    state.searchScope = 'filters';
+    state.showAll = false;
+    searchInput.value = state.searchQuery;
+    syncSidebarFromState();
+    closeAdvancedSearch();
+    render();
+    const results = document.querySelector('section.results');
+    if (results && results.getBoundingClientRect().top < 0) results.scrollIntoView({ block: 'start' });
+  }
+
+  document.getElementById('advancedSearchBtn').addEventListener('click', openAdvancedSearch);
+  document.getElementById('advSearchCloseBtn').addEventListener('click', closeAdvancedSearch);
+  advOverlay.addEventListener('click', (e) => { if (e.target === advOverlay) closeAdvancedSearch(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !advOverlay.hidden) closeAdvancedSearch(); });
+  document.getElementById('advSearchApplyBtn').addEventListener('click', applyAdvancedSearch);
+  document.getElementById('advSearchResetBtn').addEventListener('click', () => {
+    advDraft = advDefaultFilters();
+    showAdvError(null);
+    renderAdvControls();
+    renderAdvBoxes();
+    updateAdvCount();
+  });
+  [advKeywordsInput, advExcludeInput].forEach(el => {
+    el.addEventListener('input', scheduleAdvCount);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); applyAdvancedSearch(); } });
+  });
+  Object.entries(ADV_NUMBER_FIELDS).forEach(([id, [field, parse]]) => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      const v = el.value === '' ? null : parse(el.value);
+      advDraft[field] = (v === null || Number.isNaN(v)) ? null : v;
+      scheduleAdvCount();
+    });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); applyAdvancedSearch(); } });
+  });
+  document.getElementById('advDatasetPair').addEventListener('click', (e) => {
+    const btn = e.target.closest('.sort-btn');
+    if (!btn || btn.dataset.value === advDraft.dataset) return;
+    // Mirrors setDataset(): what belongs to the other dataset is cleared, so
+    // nothing hidden keeps narrowing the count.
+    const keep = { stock: advDraft.stock, priceFrom: advDraft.priceFrom, priceTo: advDraft.priceTo,
+                   showWhatsNew: advDraft.showWhatsNew };
+    advDraft = Object.assign(advDefaultFilters(), keep, { dataset: btn.dataset.value });
+    renderAdvControls();
+    renderAdvBoxes();
+    scheduleAdvCount();
+  });
+  document.getElementById('advStockPair').addEventListener('click', (e) => {
+    const btn = e.target.closest('.sort-btn');
+    if (!btn) return;
+    advDraft.stock = btn.dataset.value;
+    renderAdvControls();
+    scheduleAdvCount();
+  });
+  document.getElementById('advMatchInPair').addEventListener('click', (e) => {
+    const btn = e.target.closest('.sort-btn');
+    if (!btn) return;
+    advTitlesOnly = btn.dataset.value === 'titles';
+    renderAdvControls();
+    scheduleAdvCount();
+  });
+  document.getElementById('advTylersPickToggle').addEventListener('click', () => {
+    advDraft.tylersPickOnly = !advDraft.tylersPickOnly;
+    renderAdvControls();
+    scheduleAdvCount();
+  });
 
   // Open/close wiring shared by the plain info modals added since: button
   // opens, × and a click on the backdrop and Escape all close. The older
