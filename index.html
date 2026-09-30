@@ -646,7 +646,7 @@
 
   .listing{
     display:grid;
-    grid-template-columns:56px 1fr auto;
+    grid-template-columns:56px 1fr auto auto;
     gap:18px;
     align-items:start;
     padding:20px 0;
@@ -2007,6 +2007,182 @@
   .viz-range-group button:hover{ color:var(--ink); }
   .viz-range-group button.active{ background:rgba(209,160,82,0.14); color:var(--amber); }
 
+  /* =====================================================================
+     V3.6: Email List/Contact tabs, Favorites and the Basket.
+     ===================================================================== */
+  :root{
+    /* The Basket's silvery blue: the Tyler's Pick blue-grey, lit from above. */
+    --basket-hi:  #C9D4E2;
+    --basket-lo:  #8393A9;
+    --basket-ink: #17202D;
+    --fav-gold:   #F0C868;
+  }
+  .email-contact-tabs{ margin:14px 0 18px; }
+  .email-contact-pane[hidden]{ display:none; }
+  .email-contact-lede{ margin:0 0 12px; color:var(--ink-dim); font-size:13.5px; }
+
+  /* Pinned to the header's top-right corner - the header's first row holds
+     only the title on the left, so the corner is otherwise empty. On a phone
+     (<=820px) it drops back into the flow as its own row under the title. */
+  header.top{ position:relative; }
+  /* The buttons row always gets a line of its own under the title, so it can
+     never run into the corner buttons on a very wide screen; the title keeps
+     clear of them by the corner's width. */
+  header.top .load-controls{ flex-basis:100%; flex-wrap:wrap; }
+  header.top .title-row{ padding-right:250px; }
+  .personal-btns{
+    position:absolute;
+    top:20px;
+    right:28px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+  }
+  .pill-count{
+    font-family:var(--font-mono);
+    font-size:11px;
+    font-weight:600;
+    min-width:19px;
+    padding:1px 6px;
+    border-radius:20px;
+    text-align:center;
+    line-height:1.5;
+  }
+  .pill-count[hidden]{ display:none; }
+  .favorites-btn{ display:inline-flex; align-items:center; gap:7px; }
+  .favorites-btn .fav-btn-star{ fill:var(--fav-gold); }
+  .favorites-btn .pill-count{ background:rgba(240,200,104,0.16); color:var(--fav-gold); }
+  .favorites-btn[aria-expanded="true"]{ border-color:var(--fav-gold); color:var(--fav-gold); }
+  .basket-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding:8px 13px;
+    font-family:inherit;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--basket-ink);
+    background:linear-gradient(180deg, var(--basket-hi) 0%, #A8B6C8 55%, var(--basket-lo) 100%);
+    border:1px solid #DCE3EC;
+    border-radius:3px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 1px rgba(131,147,169,0.25), 0 2px 10px rgba(131,147,169,0.18);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .basket-btn:hover{ filter:brightness(1.07); }
+  .basket-btn[aria-expanded="true"]{ box-shadow:inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 2px var(--basket-hi); }
+  .basket-btn .pill-count{ background:var(--basket-ink); color:var(--basket-hi); }
+  .basket-btn.bump{ animation:basket-bump 0.35s ease; }
+  @keyframes basket-bump{ 40%{ transform:scale(1.08); } }
+  @media (prefers-reduced-motion: reduce){ .basket-btn.bump{ animation:none; } }
+
+  /* ---- Favorites / Basket dropdown panels ---- */
+  .personal-panel{
+    position:fixed;
+    z-index:90;
+    right:20px;
+    width:min(460px, calc(100vw - 24px));
+    max-height:calc(100vh - 120px);
+    overflow-y:auto;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:6px;
+    box-shadow:0 18px 50px rgba(0,0,0,0.55);
+    padding:18px 18px 16px;
+  }
+  .personal-panel[hidden]{ display:none; }
+  .basket-panel{ border-color:rgba(201,212,226,0.45); }
+  .pp-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+  .pp-head h2{ font-family:var(--font-display); font-size:19px; font-weight:600; margin:0; }
+  .pp-close{ background:none; border:none; color:var(--ink-faint); font-size:22px; line-height:1; cursor:pointer; padding:0 2px; }
+  .pp-close:hover{ color:var(--ink); }
+  .pp-intro{ font-size:12.5px; color:var(--ink-dim); margin:6px 0 14px; line-height:1.5; }
+  .pp-empty{ font-size:13px; color:var(--ink-faint); padding:18px 0 10px; }
+  .pp-group{ border-top:1px solid var(--line); padding:12px 0 4px; }
+  .pp-group-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:13px; font-weight:600; }
+  .pp-group-head .favicon, .pp-group-head .favicon-fallback{ width:18px; height:18px; }
+  .pp-group-sub{ margin-left:auto; font-family:var(--font-mono); font-size:12px; color:var(--ink-dim); font-weight:500; }
+  .pp-item{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:4px 12px;
+    padding:9px 0;
+    border-top:1px solid var(--line-soft);
+  }
+  .pp-group-head + .pp-item{ border-top:none; }
+  .pp-item-title{ font-size:13px; font-weight:500; text-decoration:none; line-height:1.35; }
+  .pp-item-title:hover{ color:var(--amber); }
+  .pp-item-sub{ font-size:11.5px; color:var(--ink-faint); margin-top:2px; }
+  .pp-item-sub .warn{ color:var(--rust); }
+  .pp-item-right{ display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
+  .pp-price{ font-family:var(--font-mono); font-size:12.5px; color:var(--amber); white-space:nowrap; }
+  .pp-actions{ display:flex; align-items:center; gap:6px; }
+  .pp-link-btn{
+    background:none; border:none; padding:0; cursor:pointer;
+    font-family:inherit; font-size:11.5px; color:var(--ink-faint);
+    text-decoration:underline; text-underline-offset:2px;
+  }
+  .pp-link-btn:hover{ color:var(--ink); }
+  .qty-stepper{ display:inline-flex; align-items:center; border:1px solid var(--line); border-radius:3px; }
+  .qty-stepper button{
+    width:24px; height:22px; background:none; border:none; color:var(--ink-dim);
+    font-size:14px; line-height:1; cursor:pointer; font-family:var(--font-mono);
+  }
+  .qty-stepper button:hover{ color:var(--ink); background:var(--line-soft); }
+  .qty-stepper span{ min-width:22px; text-align:center; font-family:var(--font-mono); font-size:12px; }
+  .pp-checkout{ margin:8px 0 6px; }
+  .pp-checkout-btn{
+    width:100%;
+    padding:9px 12px;
+    font-family:inherit; font-size:12.5px; font-weight:600;
+    color:var(--basket-ink);
+    background:linear-gradient(180deg, var(--basket-hi), var(--basket-lo));
+    border:1px solid #DCE3EC;
+    border-radius:3px;
+    cursor:pointer;
+  }
+  .pp-checkout-btn:hover{ filter:brightness(1.07); }
+  .pp-checkout-btn:disabled{ background:transparent; color:var(--ink-faint); border-color:var(--line); cursor:not-allowed; filter:none; }
+  .pp-checkout-note{ font-size:11.5px; color:var(--ink-faint); margin:6px 0 4px; }
+  .pp-foot{
+    border-top:1px solid var(--line);
+    margin-top:8px;
+    padding-top:12px;
+    display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    font-size:12.5px; color:var(--ink-dim);
+  }
+  .pp-foot strong{ font-family:var(--font-mono); color:var(--ink); font-weight:600; }
+
+  /* ---- On each listing: the star (under the rank) and Add to Basket ---- */
+  .rank-col{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
+  .fav-star{
+    background:none; border:none; padding:2px; margin-left:-2px;
+    cursor:pointer; line-height:0; border-radius:4px;
+  }
+  .fav-star svg{ width:20px; height:20px; fill:none; stroke:var(--ink-faint); stroke-width:1.6; stroke-linejoin:round; transition:fill 0.12s ease, stroke 0.12s ease, transform 0.12s ease; }
+  .fav-star:hover svg{ stroke:var(--fav-gold); }
+  .fav-star.on svg{ fill:var(--fav-gold); stroke:var(--fav-gold); }
+  .fav-star.on:hover svg{ transform:scale(1.08); }
+  .basket-col{ align-self:center; }
+  .basket-add{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 11px;
+    font-family:inherit; font-size:12px; font-weight:500;
+    color:#AFBDCE;
+    background:rgba(131,147,169,0.08);
+    border:1px solid rgba(131,147,169,0.55);
+    border-radius:20px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .basket-add:hover{ border-color:var(--basket-hi); color:var(--basket-hi); }
+  .basket-add.in{
+    color:var(--basket-ink);
+    background:linear-gradient(180deg, var(--basket-hi), var(--basket-lo));
+    border-color:#DCE3EC;
+    font-weight:600;
+  }
+
   /* ---------- Mobile / narrow-viewport layout ----------
      One dashboard, three breakpoints. 820px stacks the sidebar over the
      results and hides it behind the Filters button; 640px is phone-portrait
@@ -2051,6 +2227,9 @@
     .results-heading h2{ font-size:17px; }
 
     .search-band{ padding:12px 16px 10px; }
+    header.top .title-row{ padding-right:0; }
+    .personal-btns{ position:static; width:100%; }
+    .personal-btns > button{ flex:1 1 0; justify-content:center; min-height:40px; }
     .search-input{ font-size:16px; } /* 16px stops iOS zooming on focus */
     .history-line{ justify-content:flex-start; }
 
@@ -2073,8 +2252,12 @@
     .rank{
       font-size:20px;
       padding-top:0;
-      order:-1;
     }
+    /* Rank and star share one line above the title. */
+    .rank-col{ flex-direction:row; align-items:center; gap:10px; order:-1; }
+    .basket-col{ order:3; align-self:start; }
+    .basket-add{ min-height:36px; padding:6px 14px; }
+    .personal-panel{ right:12px; left:12px; width:auto; }
     .listing-price{ text-align:left; }
     .listing-price .price-line,
     .listing-price .price-detail-line{ justify-content:flex-start; }
@@ -2139,6 +2322,22 @@
         <button type="button" class="reset-link title-disclaimer" id="disclaimerBtn">disclaimer</button>
       </div>
     </div>
+  <!-- The visitor's own lists, pinned to the header's top-right corner: Favorites (the stars) and the
+         Basket (the "Add to Basket" buttons). Both live in this browser's
+         localStorage - see the PERSONAL LISTS section of the script. -->
+    <span class="personal-btns">
+      <button type="button" class="header-btn favorites-btn" id="favoritesBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="favoritesPanel">
+        <svg class="fav-btn-star" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>
+        <span>Favorites</span><span class="pill-count" id="favoritesCount" hidden></span>
+      </button>
+      <button type="button" class="basket-btn" id="basketBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="basketPanel">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3.5 9.5h17l-1.6 9.1a2 2 0 0 1-2 1.7H7.1a2 2 0 0 1-2-1.7L3.5 9.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M8 9.5l3-5.5M16 9.5l-3-5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span>Basket</span><span class="pill-count" id="basketCount" hidden></span>
+      </button>
+    </span>
     <div class="load-controls">
       <span class="file-name" id="fileName"></span>
       <span class="load-file-controls">
@@ -2148,16 +2347,20 @@
         <input type="file" id="dbInput" accept=".db">
       </span>
       <!-- Deliberately in the header, NOT in aside.filters: on a phone the
-           sidebar collapses behind #filtersToggle, and none of these three
-           are filters. See #cartModalOverlay / #subscribeModalOverlay /
-           #contactModalOverlay. -->
+           sidebar collapses behind #filtersToggle, and none of these are
+           filters. See #cartModalOverlay / #emailContactModalOverlay. -->
       <button type="button" class="btn-primary" id="makeCartBtn">Make me a cart</button>
       <button type="button" class="header-btn header-btn-accent" id="visualizeBtn">Visualize Listings</button>
       <button type="button" class="header-btn" id="whatsNewBtn" disabled>What's New?</button>
-      <button type="button" class="header-btn" id="subscribeBtn">Join the Email List</button>
-      <button type="button" class="header-btn" id="contactBtn">Contact</button>
+      <button type="button" class="header-btn" id="emailContactBtn" aria-haspopup="dialog">Email List/Contact</button>
     </div>
   </header>
+
+  <!-- Favorites + Basket menus. Dropdown panels under their header buttons
+       (placed by positionPersonalPanel()), filled by renderFavoritesPanel() /
+       renderBasketPanel(). -->
+  <div class="personal-panel" id="favoritesPanel" role="dialog" aria-label="Your favorites" hidden></div>
+  <div class="personal-panel basket-panel" id="basketPanel" role="dialog" aria-label="Your basket" hidden></div>
 
   <!-- Keyword search, in its own band under the header so it is always one
        tap away - on a phone too, where the sidebar collapses. See
@@ -2733,83 +2936,79 @@
   </div>
 </div>
 
-<!-- "Join the Email List" modal, opened by #subscribeBtn. Same deal as the
-     contact modal below: there is no server here, so "Join" builds a mailto:
-     the visitor sends from their own mail app, which is what puts their
-     address in front of a human to add to subscribers.txt. This page collects
-     nothing by itself. -->
-<div class="cart-modal-overlay" id="subscribeModalOverlay" hidden>
-  <div class="cart-modal subscribe-modal" role="dialog" aria-modal="true" aria-labelledby="subscribeModalTitle">
+<!-- "Email List/Contact" modal, opened by #emailContactBtn. One modal, two
+     tabs: joining the weekly email and sending a message. There is no server
+     behind this page and never will be, so both work the same way: the button
+     builds a mailto: the visitor sends from their own mail app ("Copy" is the
+     fallback for anyone without one). Nothing is collected or transmitted by
+     this page itself - a join request arrives as an ordinary email that a
+     human adds to subscribers.txt. -->
+<div class="cart-modal-overlay" id="emailContactModalOverlay" hidden>
+  <div class="cart-modal subscribe-modal email-contact-modal" role="dialog" aria-modal="true" aria-labelledby="emailContactModalTitle">
     <div class="cart-modal-header">
       <div>
-        <h2 id="subscribeModalTitle">Join the email list</h2>
-        <p>One email a week, free, and nothing else - no ads, no other senders.</p>
+        <h2 id="emailContactModalTitle">Email list &amp; contact</h2>
       </div>
-      <button type="button" class="cart-modal-close" id="subscribeModalCloseBtn" aria-label="Close">&times;</button>
+      <button type="button" class="cart-modal-close" id="emailContactModalCloseBtn" aria-label="Close">&times;</button>
     </div>
 
-    <ul class="subscribe-list">
-      <li>Every tea newly listed that week at the shops this dashboard tracks, grouped by shop.</li>
-      <li>The Weekly Shout: one tea and one piece of teaware worth a look.</li>
-      <li>The ten lowest price-per-gram teas in stock anywhere in the data.</li>
-    </ul>
-
-    <div class="contact-field">
-      <label class="field-label" for="subscribeEmailInput">Your email</label>
-      <input type="email" class="contact-input" id="subscribeEmailInput" placeholder="you@example.com" autocomplete="email">
+    <div class="sort-pair email-contact-tabs" role="tablist">
+      <button type="button" class="sort-btn" role="tab" id="emailTabBtn" data-tab="email" aria-controls="emailTabPane">Join the email list</button>
+      <button type="button" class="sort-btn" role="tab" id="contactTabBtn" data-tab="contact" aria-controls="contactTabPane">Send a message</button>
     </div>
 
-    <div class="contact-actions">
-      <button type="button" class="btn-primary" id="subscribeSendBtn">Join</button>
-      <button type="button" class="cart-reset-link" id="subscribeCopyBtn">Copy request</button>
-    </div>
-    <p class="cart-error" id="subscribeErrorMsg" hidden></p>
-    <p class="contact-status" id="subscribeStatusMsg" hidden></p>
-    <p class="contact-note">"Join" opens your own email app with the request ready to go - your address is added only once you send it, it is used for nothing but this weekly email, and replying "unsubscribe" takes you back off the list.</p>
-  </div>
-</div>
+    <div class="email-contact-pane" id="emailTabPane" role="tabpanel">
+      <p class="email-contact-lede">One email a week, free, and nothing else - no ads, no other senders.</p>
+      <ul class="subscribe-list">
+        <li>Every tea newly listed that week at the shops this dashboard tracks, grouped by shop.</li>
+        <li>The Weekly Shout: one tea and one piece of teaware worth a look.</li>
+        <li>The ten lowest price-per-gram teas in stock anywhere in the data.</li>
+      </ul>
 
-<!-- "Contact" feedback modal, opened by #contactBtn. This page has no server
-     and never will, so "Send" hands the message to the visitor's own mail
-     client via a mailto: link; "Copy message" is the fallback for anyone
-     without one configured. Nothing is transmitted from this page itself. -->
-<div class="cart-modal-overlay" id="contactModalOverlay" hidden>
-  <div class="cart-modal contact-modal" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle">
-    <div class="cart-modal-header">
-      <div>
-        <h2 id="contactModalTitle">Contact</h2>
-        <p>Questions, corrections, a shop worth adding? Send them over.</p>
-      </div>
-      <button type="button" class="cart-modal-close" id="contactModalCloseBtn" aria-label="Close">&times;</button>
+      <div class="contact-field">
+        <label class="field-label" for="subscribeEmailInput">Your email</label>
+        <input type="email" class="contact-input" id="subscribeEmailInput" placeholder="you@example.com" autocomplete="email">
     </div>
 
-    <div class="contact-field">
-      <span class="field-label">To</span>
-      <div class="contact-to" id="contactToLine">teatracker2000@gmail.com</div>
+      <div class="contact-actions">
+        <button type="button" class="btn-primary" id="subscribeSendBtn">Join</button>
+        <button type="button" class="cart-reset-link" id="subscribeCopyBtn">Copy request</button>
+    </div>
+      <p class="cart-error" id="subscribeErrorMsg" hidden></p>
+      <p class="contact-status" id="subscribeStatusMsg" hidden></p>
+      <p class="contact-note">"Join" opens your own email app with the request ready to go - your address is added only once you send it, it is used for nothing but this weekly email, and replying "unsubscribe" takes you back off the list.</p>
     </div>
 
-    <div class="contact-field">
-      <label class="field-label" for="contactFromInput">Your email <span style="text-transform:none;letter-spacing:0;">(optional - so you can get a reply)</span></label>
-      <input type="email" class="contact-input" id="contactFromInput" placeholder="you@example.com" autocomplete="email">
+    <div class="email-contact-pane" id="contactTabPane" role="tabpanel" hidden>
+      <p class="email-contact-lede">Questions, corrections, a shop worth adding? Send them over.</p>
+      <div class="contact-field">
+        <span class="field-label">To</span>
+        <div class="contact-to" id="contactToLine">teatracker2000@gmail.com</div>
     </div>
 
-    <div class="contact-field">
-      <label class="field-label" for="contactSubjectInput">Subject</label>
-      <input type="text" class="contact-input" id="contactSubjectInput" placeholder="Tea Price Tracker feedback" value="Tea Price Tracker feedback">
+      <div class="contact-field">
+        <label class="field-label" for="contactFromInput">Your email <span style="text-transform:none;letter-spacing:0;">(optional - so you can get a reply)</span></label>
+        <input type="email" class="contact-input" id="contactFromInput" placeholder="you@example.com" autocomplete="email">
     </div>
 
-    <div class="contact-field">
-      <label class="field-label" for="contactMessageInput">Message</label>
-      <textarea class="contact-textarea" id="contactMessageInput" placeholder="Write your feedback or comments here..."></textarea>
+      <div class="contact-field">
+        <label class="field-label" for="contactSubjectInput">Subject</label>
+        <input type="text" class="contact-input" id="contactSubjectInput" placeholder="Tea Price Tracker feedback" value="Tea Price Tracker feedback">
     </div>
 
-    <div class="contact-actions">
-      <button type="button" class="btn-primary" id="contactSendBtn">Send</button>
-      <button type="button" class="cart-reset-link" id="contactCopyBtn">Copy message</button>
+      <div class="contact-field">
+        <label class="field-label" for="contactMessageInput">Message</label>
+        <textarea class="contact-textarea" id="contactMessageInput" placeholder="Write your feedback or comments here..."></textarea>
     </div>
-    <p class="cart-error" id="contactErrorMsg" hidden></p>
-    <p class="contact-status" id="contactStatusMsg" hidden></p>
-    <p class="contact-note">"Send" opens your own email app with this message ready to go - nothing leaves this page until you press send there. No mail app? Use "Copy message" and paste it into a mail to teatracker2000@gmail.com.</p>
+
+      <div class="contact-actions">
+        <button type="button" class="btn-primary" id="contactSendBtn">Send</button>
+        <button type="button" class="cart-reset-link" id="contactCopyBtn">Copy message</button>
+    </div>
+      <p class="cart-error" id="contactErrorMsg" hidden></p>
+      <p class="contact-status" id="contactStatusMsg" hidden></p>
+      <p class="contact-note">"Send" opens your own email app with this message ready to go - nothing leaves this page until you press send there. No mail app? Use "Copy message" and paste it into a mail to teatracker2000@gmail.com.</p>
+    </div>
   </div>
 </div>
 
@@ -6826,10 +7025,15 @@
     const el = document.createElement('div');
     el.className = 'listing';
 
+    // The rank, with the Favorites star under it (beside it on a phone).
+    const rankCol = document.createElement('div');
+    rankCol.className = 'rank-col';
     const rankEl = document.createElement('div');
     rankEl.className = 'rank';
     rankEl.textContent = rank;
-    el.appendChild(rankEl);
+    rankCol.appendChild(rankEl);
+    rankCol.appendChild(buildFavoriteStar(r));
+    el.appendChild(rankCol);
 
     const main = document.createElement('div');
     main.className = 'listing-main';
@@ -7008,6 +7212,12 @@
       priceCol.appendChild(histLine);
     }
 
+    // "Add to Basket" gets its own column, just left of the price.
+    const basketCol = document.createElement('div');
+    basketCol.className = 'basket-col';
+    basketCol.appendChild(buildBasketToggle(r));
+    el.appendChild(basketCol);
+
     el.appendChild(priceCol);
 
     return el;
@@ -7032,6 +7242,7 @@
     reader.onload = (evt) => {
       allRows = rowsFromCSVText(evt.target.result);
       closePriceHistoryForReload();
+      refreshPersonalSnapshots();
       computeGlobalPgSortedValues();
       // Loading a CSV clears what a previous .db left behind, so "See
       // what's new" goes back to disabled with no stale run dates.
@@ -7104,6 +7315,7 @@
       price_hist: (iHist === -1 || v[iHist] === null || v[iHist] === undefined) ? null : String(v[iHist]),
     }));
     closePriceHistoryForReload();
+    refreshPersonalSnapshots();
 
     // Newest-first, decided by the query; `allRows` is already that one run.
     dbRunDates = (runDates || []).filter(Boolean);
@@ -8090,6 +8302,457 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !cartModalOverlay.hidden) cartModalOverlay.hidden = true; });
 
   // ===================================================================
+  // PERSONAL LISTS: Favorites (the star on each listing) and the Basket
+  // ("Add to Basket"). The Basket is the visitor's own hand-picked order, as
+  // opposed to "Make me a cart", which picks for them.
+  //
+  // Both live in localStorage. This page is static - no server, no accounts -
+  // so the visitor's own browser is the only place they CAN live. That means
+  // they are per browser and per device, and clearing site data (or a private
+  // window) starts them over. Every read and write is wrapped: some browsers
+  // throw on localStorage outright (private mode, file://, blocked storage),
+  // and a dashboard that won't load is worse than a list that isn't saved.
+  //
+  // Each saved entry is a SNAPSHOT of its listing - title, price, link,
+  // Shopify variant id - so it still shows if the listing drops out of a later
+  // week's data. While the listing IS in the loaded data, its current price
+  // and stock are shown instead, and the snapshot is refreshed to match.
+  // ===================================================================
+  const FAVORITES_STORAGE_KEY = 'teaTracker.favorites.v1';
+  const BASKET_STORAGE_KEY = 'teaTracker.basket.v1';
+  const BASKET_MAX_QTY = 99;
+  const STAR_PATH = 'M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z';
+
+  // A listing's identity across weekly runs: the same site + product link +
+  // size. (Prices and stock change week to week; these don't.)
+  function listingKey(r){
+    if (!r._key) r._key = (r.site || '') + '||' + (r.product_url || '') + '||' + (r.variant_title || '');
+    return r._key;
+  }
+  function snapshotOf(r){
+    return {
+      key: listingKey(r),
+      site: r.site, category: r.category,
+      product_title: r.product_title, variant_title: r.variant_title,
+      product_url: r.product_url, variant_id: r.variant_id,
+      price_usd: r.price_usd, weight_grams: r.weight_grams, price_per_gram: r.price_per_gram,
+      in_stock: r.in_stock,
+      added: new Date().toISOString().slice(0, 10),
+    };
+  }
+  function loadPersonalList(storageKey){
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(storageKey) || '[]');
+      return Array.isArray(parsed) ? parsed.filter(e => e && typeof e.key === 'string') : [];
+    } catch (e){ return []; }
+  }
+  function savePersonalList(storageKey, list){
+    try { window.localStorage.setItem(storageKey, JSON.stringify(list)); } catch (e){ /* not saved - still works this visit */ }
+  }
+
+  let favorites = loadPersonalList(FAVORITES_STORAGE_KEY);   // [snapshot]
+  let basket = loadPersonalList(BASKET_STORAGE_KEY);         // [snapshot + qty]
+  basket.forEach(e => { e.qty = Math.min(BASKET_MAX_QTY, Math.max(1, parseInt(e.qty, 10) || 1)); });
+  const isFavorite = key => favorites.some(e => e.key === key);
+  const basketEntry = key => basket.find(e => e.key === key) || null;
+
+  // key -> the listing in the currently loaded data, rebuilt when allRows is
+  // replaced by a new load.
+  let liveRowIndex = null, liveRowIndexFor = null;
+  function liveRowFor(key){
+    if (liveRowIndexFor !== allRows){
+      liveRowIndex = new Map();
+      allRows.forEach(r => liveRowIndex.set(listingKey(r), r));
+      liveRowIndexFor = allRows;
+    }
+    return liveRowIndex.get(key) || null;
+  }
+  // What to display for a saved entry: the live listing's current figures
+  // when it's in the data, else the snapshot, flagged as missing.
+  function entryView(e){
+    const live = liveRowFor(e.key);
+    if (!live) return Object.assign({}, e, { missing: allRows.length > 0, live: null });
+    return Object.assign({}, e, {
+      price_usd: live.price_usd, price_per_gram: live.price_per_gram, in_stock: live.in_stock,
+      variant_id: live.variant_id || e.variant_id, missing: false, live,
+    });
+  }
+
+  // After each data load: carry this week's figures into the saved
+  // snapshots, so a listing that later disappears still shows its last price.
+  function refreshPersonalSnapshots(){
+    if (!allRows.length) return;
+    [[favorites, FAVORITES_STORAGE_KEY], [basket, BASKET_STORAGE_KEY]].forEach(([list, storageKey]) => {
+      let changed = false;
+      list.forEach(e => {
+        const live = liveRowFor(e.key);
+        if (!live) return;
+        const fresh = snapshotOf(live);
+        ['price_usd', 'price_per_gram', 'in_stock', 'variant_id', 'category', 'product_title', 'weight_grams'].forEach(f => {
+          if (fresh[f] !== e[f]){ e[f] = fresh[f]; changed = true; }
+        });
+      });
+      if (changed) savePersonalList(storageKey, list);
+    });
+    updatePersonalCounts();
+  }
+
+  // Everything that shows list membership, refreshed in place (no full
+  // render(), so the page doesn't jump): the header counts, every star and
+  // basket button on screen, and whichever panel is open.
+  function afterPersonalChange(){
+    updatePersonalCounts();
+    document.querySelectorAll('.fav-star[data-key]').forEach(applyStarState);
+    document.querySelectorAll('.basket-add[data-key]').forEach(applyBasketButtonState);
+    if (!favoritesPanel.hidden) renderFavoritesPanel();
+    if (!basketPanel.hidden) renderBasketPanel();
+  }
+  function updatePersonalCounts(){
+    const fav = document.getElementById('favoritesCount');
+    fav.hidden = favorites.length === 0;
+    fav.textContent = String(favorites.length);
+    const items = basket.reduce((n, e) => n + e.qty, 0);
+    const bc = document.getElementById('basketCount');
+    bc.hidden = items === 0;
+    bc.textContent = String(items);
+    basketBtn.title = items ? items + ' item' + (items === 1 ? '' : 's') + ' in your basket' : 'Your basket is empty';
+  }
+
+  function toggleFavorite(r){
+    const key = listingKey(r);
+    favorites = isFavorite(key) ? favorites.filter(e => e.key !== key) : [...favorites, snapshotOf(r)];
+    savePersonalList(FAVORITES_STORAGE_KEY, favorites);
+    afterPersonalChange();
+  }
+  function removeFavorite(key){
+    favorites = favorites.filter(e => e.key !== key);
+    savePersonalList(FAVORITES_STORAGE_KEY, favorites);
+    afterPersonalChange();
+  }
+  function toggleBasket(r){
+    const key = listingKey(r);
+    if (basketEntry(key)){
+      basket = basket.filter(e => e.key !== key);
+    } else {
+      basket = [...basket, Object.assign(snapshotOf(r), { qty: 1 })];
+      basketBtn.classList.remove('bump');
+      void basketBtn.offsetWidth;          // restart the animation
+      basketBtn.classList.add('bump');
+    }
+    savePersonalList(BASKET_STORAGE_KEY, basket);
+    afterPersonalChange();
+  }
+  function setBasketQty(key, qty){
+    const e = basketEntry(key);
+    if (!e) return;
+    e.qty = Math.min(BASKET_MAX_QTY, Math.max(1, qty));
+    savePersonalList(BASKET_STORAGE_KEY, basket);
+    afterPersonalChange();
+  }
+  function removeFromBasket(key){
+    basket = basket.filter(e => e.key !== key);
+    savePersonalList(BASKET_STORAGE_KEY, basket);
+    afterPersonalChange();
+  }
+
+  // Another tab of the dashboard changed a list: follow it.
+  window.addEventListener('storage', (ev) => {
+    if (ev.key === FAVORITES_STORAGE_KEY) favorites = loadPersonalList(FAVORITES_STORAGE_KEY);
+    else if (ev.key === BASKET_STORAGE_KEY) basket = loadPersonalList(BASKET_STORAGE_KEY);
+    else return;
+    afterPersonalChange();
+  });
+
+  // ---- The controls on each listing ----
+  function starSvg(){
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + STAR_PATH + '"/></svg>';
+  }
+  function applyStarState(btn){
+    const on = isFavorite(btn.dataset.key);
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-pressed', String(on));
+    btn.title = on ? 'In your favorites - click to remove' : 'Add to favorites';
+    btn.setAttribute('aria-label', btn.title);
+  }
+  function buildFavoriteStar(r){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'fav-star';
+    btn.dataset.key = listingKey(r);
+    btn.innerHTML = starSvg();
+    applyStarState(btn);
+    btn.addEventListener('click', () => toggleFavorite(r));
+    return btn;
+  }
+  function applyBasketButtonState(btn){
+    const inBasket = !!basketEntry(btn.dataset.key);
+    btn.classList.toggle('in', inBasket);
+    btn.setAttribute('aria-pressed', String(inBasket));
+    btn.textContent = inBasket ? '✓ In Basket' : 'Add to Basket';
+    btn.title = inBasket ? 'In your basket - click to take it out' : 'Add this to your basket';
+  }
+  function buildBasketToggle(r){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'basket-add';
+    btn.dataset.key = listingKey(r);
+    applyBasketButtonState(btn);
+    btn.addEventListener('click', () => toggleBasket(r));
+    return btn;
+  }
+
+  // ---- The two header panels ----
+  const favoritesBtn = document.getElementById('favoritesBtn');
+  const basketBtn = document.getElementById('basketBtn');
+  const favoritesPanel = document.getElementById('favoritesPanel');
+  const basketPanel = document.getElementById('basketPanel');
+  const PERSONAL_PANELS = [[favoritesPanel, favoritesBtn], [basketPanel, basketBtn]];
+
+  // Hangs the panel under its button, right edges aligned, and keeps it on
+  // screen: once the header has scrolled away it sits at the top instead.
+  function positionPersonalPanel(panel, btn){
+    const rect = btn.getBoundingClientRect();
+    const top = Math.max(10, rect.bottom + 8);
+    panel.style.top = top + 'px';
+    panel.style.maxHeight = Math.max(240, window.innerHeight - top - 14) + 'px';
+    if (!vizIsNarrow()) panel.style.right = Math.max(12, window.innerWidth - rect.right) + 'px';
+    else panel.style.right = '';
+  }
+  function openPersonalPanel(panel, btn){
+    PERSONAL_PANELS.forEach(([p, b]) => { if (p !== panel) closePersonalPanel(p, b); });
+    (panel === basketPanel ? renderBasketPanel : renderFavoritesPanel)();
+    panel.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    positionPersonalPanel(panel, btn);
+  }
+  function closePersonalPanel(panel, btn){
+    panel.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+  }
+  PERSONAL_PANELS.forEach(([panel, btn]) => {
+    btn.addEventListener('click', () => {
+      if (panel.hidden) openPersonalPanel(panel, btn); else closePersonalPanel(panel, btn);
+    });
+  });
+  // Outside click / Escape closes. composedPath() rather than contains(): a
+  // click on "Remove" re-renders the panel, detaching the very button that
+  // was clicked by the time this runs.
+  document.addEventListener('click', (e) => {
+    const path = e.composedPath();
+    PERSONAL_PANELS.forEach(([panel, btn]) => {
+      if (!panel.hidden && !path.includes(panel) && !path.includes(btn)) closePersonalPanel(panel, btn);
+    });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') PERSONAL_PANELS.forEach(([p, b]) => { if (!p.hidden) closePersonalPanel(p, b); });
+  });
+  ['scroll', 'resize'].forEach(evt => window.addEventListener(evt, () => {
+    PERSONAL_PANELS.forEach(([p, b]) => { if (!p.hidden) positionPersonalPanel(p, b); });
+  }, { passive: true }));
+
+  function el(tag, className, text){
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function panelHead(panel, btn, title){
+    const head = el('div', 'pp-head');
+    head.appendChild(el('h2', null, title));
+    const close = el('button', 'pp-close', '×');
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Close');
+    close.addEventListener('click', () => { closePersonalPanel(panel, btn); btn.focus(); });
+    head.appendChild(close);
+    return head;
+  }
+  // Saved entries, grouped by shop (alphabetical), each group in the order
+  // its listings were added.
+  function groupBySite(list){
+    const groups = new Map();
+    list.forEach(e => {
+      if (!groups.has(e.site)) groups.set(e.site, []);
+      groups.get(e.site).push(entryView(e));
+    });
+    return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }
+  function groupHead(site, rightText){
+    const head = el('div', 'pp-group-head');
+    head.appendChild(faviconEl(site));
+    head.appendChild(el('span', null, site));
+    if (rightText) head.appendChild(el('span', 'pp-group-sub', rightText));
+    return head;
+  }
+  // Title (linked) and the size / status line under it.
+  function itemLeft(v){
+    const left = el('div');
+    const a = el('a', 'pp-item-title', v.product_title);
+    a.href = v.product_url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    left.appendChild(a);
+    const sub = el('div', 'pp-item-sub');
+    const bits = [];
+    if (v.variant_title) bits.push(escapeXml(v.variant_title));
+    if (v.price_per_gram !== null && v.price_per_gram !== undefined && !ACCESSORY_CATEGORIES.has(v.category)){
+      bits.push('$' + Number(v.price_per_gram).toFixed(3) + '/g');
+    }
+    if (v.missing) bits.push('<span class="warn" title="Not in the latest weekly data - it may have sold out or been taken down. Price shown is the last one seen.">not in the latest data</span>');
+    else if (v.in_stock === false) bits.push('<span class="warn">out of stock</span>');
+    sub.innerHTML = bits.join(' · ');
+    left.appendChild(sub);
+    return left;
+  }
+  const priceOf = v => (v.price_usd === null || v.price_usd === undefined || Number.isNaN(v.price_usd)) ? null : Number(v.price_usd);
+
+  function renderFavoritesPanel(){
+    const panel = favoritesPanel;
+    panel.innerHTML = '';
+    panel.appendChild(panelHead(panel, favoritesBtn, 'Favorites' + (favorites.length ? ' (' + favorites.length + ')' : '')));
+    panel.appendChild(el('p', 'pp-intro', 'Every listing you\'ve starred, with this week\'s price. Saved in this browser.'));
+    if (!favorites.length){
+      panel.appendChild(el('div', 'pp-empty', 'No favorites yet - click the ☆ beside any listing to add it here.'));
+      return;
+    }
+    groupBySite(favorites).forEach(([site, items]) => {
+      const group = el('div', 'pp-group');
+      group.appendChild(groupHead(site, items.length + ' saved'));
+      items.forEach(v => {
+        const row = el('div', 'pp-item');
+        row.appendChild(itemLeft(v));
+        const right = el('div', 'pp-item-right');
+        const p = priceOf(v);
+        right.appendChild(el('div', 'pp-price', p === null ? '—' : '$' + p.toFixed(2)));
+        const actions = el('div', 'pp-actions');
+        const inBasket = !!basketEntry(v.key);
+        const add = el('button', 'pp-link-btn', inBasket ? 'In basket ✓' : 'Add to basket');
+        add.type = 'button';
+        add.addEventListener('click', () => {
+          if (inBasket) removeFromBasket(v.key);
+          else toggleBasket(v.live || v);
+        });
+        actions.appendChild(add);
+        const unstar = el('button', 'pp-link-btn', 'Remove');
+        unstar.type = 'button';
+        unstar.addEventListener('click', () => removeFavorite(v.key));
+        actions.appendChild(unstar);
+        right.appendChild(actions);
+        row.appendChild(right);
+        group.appendChild(row);
+      });
+      panel.appendChild(group);
+    });
+  }
+
+  // Two clicks to empty the basket, so a stray one can't lose it.
+  let emptyBasketArmed = false, emptyBasketTimer = null;
+
+  function renderBasketPanel(){
+    const panel = basketPanel;
+    panel.innerHTML = '';
+    const itemCount = basket.reduce((n, e) => n + e.qty, 0);
+    panel.appendChild(panelHead(panel, basketBtn, 'Your basket' + (itemCount ? ' (' + itemCount + ')' : '')));
+    panel.appendChild(el('p', 'pp-intro',
+      'Pick teas yourself with "Add to Basket" and they collect here, grouped by shop - each shop checks out ' +
+      'separately. For Shopify shops, "Check Out on…" opens that shop\'s own cart with these items and quantities ' +
+      'already in it, and you finish the order there. Mei Leaf, TWG Tea and Verdant Tea can\'t take a pre-filled ' +
+      'cart, so open those listings to buy them. Your basket is saved in this browser.'));
+    if (!basket.length){
+      panel.appendChild(el('div', 'pp-empty', 'Your basket is empty - click "Add to Basket" on any listing to start one.'));
+      return;
+    }
+    let grandTotal = 0;
+    groupBySite(basket).forEach(([site, items]) => {
+      const qtyTotal = items.reduce((n, v) => n + v.qty, 0);
+      const subtotal = items.reduce((sum, v) => sum + (priceOf(v) || 0) * v.qty, 0);
+      grandTotal += subtotal;
+      const group = el('div', 'pp-group');
+      group.appendChild(groupHead(site, '$' + subtotal.toFixed(2) + ' · ' + qtyTotal + ' item' + (qtyTotal === 1 ? '' : 's')));
+      items.forEach(v => {
+        const row = el('div', 'pp-item');
+        row.appendChild(itemLeft(v));
+        const right = el('div', 'pp-item-right');
+        const p = priceOf(v);
+        right.appendChild(el('div', 'pp-price', p === null ? '—'
+          : (v.qty > 1 ? v.qty + ' × $' + p.toFixed(2) + ' = $' + (p * v.qty).toFixed(2) : '$' + p.toFixed(2))));
+        const actions = el('div', 'pp-actions');
+        const stepper = el('span', 'qty-stepper');
+        const minus = el('button', null, '−'); minus.type = 'button';
+        minus.setAttribute('aria-label', 'One fewer');
+        minus.disabled = v.qty <= 1;
+        minus.addEventListener('click', () => setBasketQty(v.key, v.qty - 1));
+        const plus = el('button', null, '+'); plus.type = 'button';
+        plus.setAttribute('aria-label', 'One more');
+        plus.addEventListener('click', () => setBasketQty(v.key, v.qty + 1));
+        stepper.appendChild(minus);
+        stepper.appendChild(el('span', null, String(v.qty)));
+        stepper.appendChild(plus);
+        actions.appendChild(stepper);
+        const remove = el('button', 'pp-link-btn', 'Remove');
+        remove.type = 'button';
+        remove.addEventListener('click', () => removeFromBasket(v.key));
+        actions.appendChild(remove);
+        right.appendChild(actions);
+        row.appendChild(right);
+        group.appendChild(row);
+      });
+
+      // Checkout: the same Shopify cart permalink "Make me a cart" builds
+      // (buildShopifyCartUrl()), one per shop.
+      const checkout = el('div', 'pp-checkout');
+      if (NON_SHOPIFY_SITES.has(site)){
+        checkout.appendChild(el('div', 'pp-checkout-note',
+          site + ' isn\'t a Shopify store, so there\'s no one-click cart - open each listing above to add it there.'));
+      } else {
+        const btn = el('button', 'pp-checkout-btn', 'Check Out on ' + site);
+        btn.type = 'button';
+        const cartItems = items.map(v => ({ product_url: v.product_url, variant_id: v.variant_id, cart_qty: v.qty }));
+        if (cartItems.some(i => !i.variant_id)){
+          btn.disabled = true;
+          btn.title = 'Some of these listings have no Shopify product id in the loaded data, so no cart link can be built.';
+        } else {
+          btn.addEventListener('click', () => {
+            window.open(buildShopifyCartUrl(cartItems), '_blank', 'noopener,noreferrer');
+          });
+        }
+        checkout.appendChild(btn);
+        if (items.some(v => v.missing || v.in_stock === false)){
+          checkout.appendChild(el('div', 'pp-checkout-note',
+            'Items marked out of stock or not in the latest data may not make it into the shop\'s cart.'));
+        }
+      }
+      group.appendChild(checkout);
+      panel.appendChild(group);
+    });
+
+    const foot = el('div', 'pp-foot');
+    const total = el('span');
+    total.innerHTML = 'Total across ' + groupBySite(basket).length + ' shop' + (groupBySite(basket).length === 1 ? '' : 's') +
+      ': <strong>$' + grandTotal.toFixed(2) + '</strong>';
+    foot.appendChild(total);
+    const empty = el('button', 'pp-link-btn', emptyBasketArmed ? 'Click again to empty the basket' : 'Empty basket');
+    empty.type = 'button';
+    empty.addEventListener('click', () => {
+      if (!emptyBasketArmed){
+        emptyBasketArmed = true;
+        clearTimeout(emptyBasketTimer);
+        emptyBasketTimer = setTimeout(() => { emptyBasketArmed = false; if (!basketPanel.hidden) renderBasketPanel(); }, 3500);
+        renderBasketPanel();
+        return;
+      }
+      emptyBasketArmed = false;
+      clearTimeout(emptyBasketTimer);
+      basket = [];
+      savePersonalList(BASKET_STORAGE_KEY, basket);
+      afterPersonalChange();
+    });
+    foot.appendChild(empty);
+    panel.appendChild(foot);
+  }
+
+  updatePersonalCounts();
+
+  // ===================================================================
   // Advanced search: keywords + every sidebar filter in one form.
   //
   // The form edits a DRAFT (advDraft) with the same field names as `state`,
@@ -8508,7 +9171,6 @@
   // mail client registered - same shape as the contact modal below.
   const SUBSCRIBE_EMAIL = 'teatracker2000@gmail.com';
   const SUBSCRIBE_SUBJECT = 'Tea Price Tracker - join the email list';
-  const subscribeModalOverlay = document.getElementById('subscribeModalOverlay');
 
   function showSubscribeError(msg){
     const el = document.getElementById('subscribeErrorMsg');
@@ -8535,15 +9197,37 @@
            address + '\n';
   }
 
-  document.getElementById('subscribeBtn').addEventListener('click', () => {
+  // ---- "Email List/Contact": one button, one modal, two tabs ----
+  // The email-list and contact forms used to be two header buttons and two
+  // modals; they share this one now. Everything inside each tab - the ids,
+  // the mailto: building, the copy fallbacks below - is unchanged.
+  const emailContactOverlay = document.getElementById('emailContactModalOverlay');
+  function showEmailContactTab(tab){
+    ['email', 'contact'].forEach(t => {
+      const btn = document.getElementById(t + 'TabBtn');
+      const on = t === tab;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-selected', String(on));
+      document.getElementById(t + 'TabPane').hidden = !on;
+    });
+    document.getElementById(tab === 'email' ? 'subscribeEmailInput' : 'contactMessageInput').focus();
+  }
+  document.getElementById('emailTabBtn').addEventListener('click', () => showEmailContactTab('email'));
+  document.getElementById('contactTabBtn').addEventListener('click', () => showEmailContactTab('contact'));
+  document.getElementById('emailContactBtn').addEventListener('click', () => {
     showSubscribeError(null);
     showSubscribeStatus(null);
-    subscribeModalOverlay.hidden = false;
-    document.getElementById('subscribeEmailInput').focus();
+    showContactError(null);
+    showContactStatus(null);
+    emailContactOverlay.hidden = false;
+    // Reopens on whichever tab was used last; the email list the first time.
+    const contactOpen = document.getElementById('contactTabBtn').classList.contains('active');
+    showEmailContactTab(contactOpen ? 'contact' : 'email');
   });
-  document.getElementById('subscribeModalCloseBtn').addEventListener('click', () => { subscribeModalOverlay.hidden = true; });
-  subscribeModalOverlay.addEventListener('click', (e) => { if (e.target === subscribeModalOverlay) subscribeModalOverlay.hidden = true; });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !subscribeModalOverlay.hidden) subscribeModalOverlay.hidden = true; });
+  const closeEmailContact = () => { emailContactOverlay.hidden = true; };
+  document.getElementById('emailContactModalCloseBtn').addEventListener('click', closeEmailContact);
+  emailContactOverlay.addEventListener('click', (e) => { if (e.target === emailContactOverlay) closeEmailContact(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !emailContactOverlay.hidden) closeEmailContact(); });
 
   document.getElementById('subscribeSendBtn').addEventListener('click', () => {
     const address = readSubscribeEmail();
@@ -8586,7 +9270,6 @@
   // "Send" builds a mailto: URL and hands it to the visitor's own mail client,
   // and "Copy message" is the fallback for a browser with none registered.
   const CONTACT_EMAIL = 'teatracker2000@gmail.com';
-  const contactModalOverlay = document.getElementById('contactModalOverlay');
 
   function showContactError(msg){
     const el = document.getElementById('contactErrorMsg');
@@ -8612,15 +9295,6 @@
     return from ? (message + '\n\n---\nReply to: ' + from) : message;
   }
 
-  document.getElementById('contactBtn').addEventListener('click', () => {
-    showContactError(null);
-    showContactStatus(null);
-    contactModalOverlay.hidden = false;
-    document.getElementById('contactMessageInput').focus();
-  });
-  document.getElementById('contactModalCloseBtn').addEventListener('click', () => { contactModalOverlay.hidden = true; });
-  contactModalOverlay.addEventListener('click', (e) => { if (e.target === contactModalOverlay) contactModalOverlay.hidden = true; });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !contactModalOverlay.hidden) contactModalOverlay.hidden = true; });
 
   document.getElementById('contactSendBtn').addEventListener('click', () => {
     const form = readContactForm();
