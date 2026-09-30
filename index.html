@@ -543,6 +543,12 @@
   }
   .toggle-btn.state-in .dot{ background:var(--jade); }
   .toggle-btn.state-out .dot{ background:var(--rust); }
+  /* Availability: the box's outline takes its dot's color while "In stock
+     only" (green) or "Out of stock only" (red) is on; "Any" stays plain. */
+  .toggle-btn.state-in,
+  .toggle-btn.state-in:hover{ border-color:var(--jade); }
+  .toggle-btn.state-out,
+  .toggle-btn.state-out:hover{ border-color:var(--rust); }
   /* On/off toggles (year-range mode) reuse .toggle-btn, minus the 3-state cycle. */
   .toggle-btn.active{ border-color:var(--amber); color:var(--amber); }
   .toggle-btn.active .dot{ background:var(--amber); }
@@ -551,7 +557,7 @@
   /* "My Favorites" toggle, in the gold of the stars it filters by. */
   .toggle-btn.state-favorites{ border-color:#F0C868; color:#F0C868; }
   .toggle-btn.state-favorites .dot{ background:#F0C868; }
-  .toggle-btn.state-tylers .dot{ background:var(--tag-tylers-pick); box-shadow:0 0 0 1px rgba(200,204,210,0.5); }
+  .toggle-btn.state-tylers .dot{ background:var(--tag-tylers-pick); }
 
   .sort-pair{ display:flex; gap:8px; }
   .sort-btn{
