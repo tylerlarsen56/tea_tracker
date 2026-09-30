@@ -45,11 +45,11 @@ email address and your Gmail app password never leave your PC.
 | `tea_price_tracker.py` | Weekly scraper. Classifies, writes a CSV, updates `tea_prices.db`, publishes it to git, sends the email. |
 | `site_adapters.py` | One fetcher per shop **platform** - Shopify, Magento (Verdant Tea), Sitefinity (TWG Tea), and Mei Leaf's bespoke storefront. The only code that knows how a given shop serves its catalog; everything after it is shared. |
 | `config.py` | Your Gmail sender/recipient + app password, and (optionally) the path to your dashboard git repo. **Never commit this file anywhere.** |
-| `tea_db.py` | SQLite storage: add/remove/trim/list runs, the trend-query helpers the dashboard's "what's new" feature is built on, and `write_dashboard_copy()` / `gzip_file()`, which build the slimmed, gzipped copy that actually gets published. |
+| `tea_db.py` | SQLite storage: add/remove/trim/list runs, the long-term `price_history` table (see [Price history](#price-history)), the trend-query helpers the dashboard's "what's new" feature is built on, and `write_dashboard_copy()` / `gzip_file()`, which build the slimmed, gzipped copy that actually gets published. |
 | `git_publish.py` | Copies the published database files into your dashboard repo and does `git add` / `commit` / `push`, safely and idempotently. |
 | `migrate_csvs_to_db.py` | One-time (or occasional) bulk-import of `output/*.csv` history into a `.db` file. |
 | `run_tea_tracker.bat` | What Task Scheduler actually runs each week. |
-| `index.html` | The dashboard. Fully self-contained, runs entirely in your browser - no server, no build step. It is responsive: on narrow screens the filter sidebar collapses behind a "Filters" button and the listing rows stack. Being named `index.html` is what makes GitHub Pages serve it at the site root, with no filename in the URL. |
+| `index.html` | The dashboard. Fully self-contained, runs entirely in your browser - no server, no build step. It is responsive: on narrow screens the filter sidebar collapses behind a "Filters" button and the listing rows stack. Being named `index.html` is what makes GitHub Pages serve it at the site root, with no filename in the URL. See [Dashboard search and price history](#dashboard-search-and-price-history). |
 
 ### Tea types
 
@@ -222,6 +222,10 @@ publishing, with the ballast removed:
 - **the third run.** The dashboard shows the newest and diffs it against the
   one before for "See what's new"; a third is never looked at.
 
+One column is **added**: `price_hist`, each current listing's price history
+in a compact form (see [Price history](#price-history)). It adds about 20 KB
+to the gzipped file.
+
 Then VACUUM, then gzip: SQLite text compresses to about a fifth. In practice
 **84 MB becomes about 3.5 MB**, and both the plain and the `.gz` copy are
 published in the same commit. The page asks for the `.gz` first and unpacks it
@@ -238,11 +242,86 @@ last ten minutes can take one extra reload to appear - the scraper runs weekly.
 
 `tea_prices.db` is intentionally kept small: every run trims anything older
 than the 2 most recent prior sessions before adding its own, so the database
-holds about 3 weeks of history at a time (see `tea_db.trim_old_sessions()`),
-which keeps it cheap to commit weekly. **The CSVs in `output/` are never
-trimmed** - they're your real, permanent history. For a full, untrimmed
-database, run `migrate_csvs_to_db.py` against a separate `.db` path rather
-than the live `tea_prices.db`.
+holds about 3 weeks of *full listings* at a time (see
+`tea_db.trim_old_sessions()`), which keeps it cheap to commit weekly. **The
+CSVs in `output/` are never trimmed** - they're your real, permanent history.
+For a full, untrimmed database, run `migrate_csvs_to_db.py` against a separate
+`.db` path rather than the live `tea_prices.db`.
+
+The one exception is prices, which are kept long-term - next section.
+
+## Price history
+
+Keeping a year of weekly runs as full listings would mean 52 copies of every
+row - hundreds of MB. But prices barely move: in a typical week a few dozen
+to a few hundred of ~19,500 listings change price. So `tea_prices.db` has a
+second table, `price_history`, that trimming never touches, holding **one row
+per listing with only the changes**:
+
+```
+listing_key  white2tea::2022-blood-moon-mini::~7g
+first_seen   2026-09-13
+last_seen    2027-03-07
+points       2026-09-13:24.5;2026-11-01:27
+```
+
+i.e. $24.50 from Sep 13, then $27 from Nov 1 until the last run it was seen
+in. A listing whose price never moves costs one short row forever, however
+many weeks go by; each change adds about 16 bytes. There is no cap on how far
+back it goes.
+
+- **It builds itself.** The first run of v3.6 finds the table empty and
+  backfills it from every `output/tea_prices_YYYY-MM-DD.csv` (a
+  `..._PARTIAL.csv` is ignored), then each run after adds its own prices.
+- **$0 isn't a price.** Shops use $0 for placeholder and sold-out variants,
+  so a $0 or missing price is not recorded; the line holds the last real one.
+- **Listings that vanish are forgotten** after 400 days unseen
+  (`PRICE_HISTORY_FORGET_DAYS` in `tea_db.py`; `None` keeps them forever).
+- **Commands:** `python tea_db.py history-rebuild` redoes it from the CSVs
+  (safe any time - e.g. after deleting a bad run), `python tea_db.py
+  history-stats` shows what's stored.
+
+**What it costs the published file.** The dashboard copy gets a `price_hist`
+column on the newest run's rows, even tighter than the table above - days are
+counted from 1970, and a listing whose price never changed is just the day it
+was first seen (`20709`), since its price is already in `price_usd`:
+
+```
+20709                  first seen on day 20709, price unchanged since
+20709:24.5,20758:27    $24.50 from day 20709, $27 from day 20758
+```
+
+With the 8 runs in `output/` at the time of writing, that added **21 KB** to
+the gzipped download (1.908 MB -> 1.929 MB) and 114 KB to the plain `.db`.
+A year of weekly changes at the rate seen so far adds roughly another 20-60 KB
+to the gzip.
+
+## Dashboard search and price history
+
+- **Search bar** (its own strip under the header). Matches keywords against
+  titles, shops, tea types, form factors, tasting notes and years, at the
+  start of a word ("yiwu" finds "Yiwushan"; "ash" doesn't find "washed").
+  Every word must match; `"quoted phrase"` keeps words together and `-word`
+  leaves listings out. Accents and the many spellings of pu-erh are folded,
+  so `puer`, `pu-erh` and `pu'er` all find each other. Results are ranked by
+  how well they match (a whole word in the title counts most), with the sort
+  buttons breaking ties.
+- **Search scope.** A plain search looks through *every* listing - tea and
+  teaware, in stock or not - and the sidebar filters are paused (and say so).
+  "Search within my filters", or touching any filter, narrows it to the
+  filtered set instead.
+- **Advanced search** (button at the right of the bar). Keywords, words to
+  leave out, "titles only", and every sidebar filter in one form, pre-filled
+  from what the dashboard is showing, with a live match count. Its "Reset all
+  filters" clears the form's filters but keeps the keywords, and nothing on
+  the page changes until you press Search.
+- **Typed filters** (year range, weight, price) apply once the number is
+  finished - Enter, leaving the box, or a 0.7 s pause - instead of on every
+  keystroke, which is what used to make typing in them lag.
+- **See price history** (small link under each listing's price). Opens a
+  price-over-time chart for that listing in the Visualize panel, with All /
+  1 year / 6 months / 1 month ranges. Time before tracking began is shaded
+  "not tracked yet" rather than stretched.
 
 ## Security
 
@@ -266,4 +345,7 @@ python -m http.server 8000
 ```
 
 then open `http://localhost:8000/` in a browser - `index.html` is served
-at the directory root, so no filename is needed.
+at the directory root, so no filename is needed. The page loads
+`tea_prices.db.gz` first if one sits beside it, and the full local
+`tea_prices.db` otherwise (which works, but has no `price_hist` column, so no
+price-history links).
