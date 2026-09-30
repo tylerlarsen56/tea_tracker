@@ -548,6 +548,9 @@
   .toggle-btn.active .dot{ background:var(--amber); }
   /* "Tyler's Picks" toggle, themed to match the BADGE so filter and badge read as one. */
   .toggle-btn.state-tylers{ border-color:var(--silver); color:var(--tag-tylers-pick); }
+  /* "My Favorites" toggle, in the gold of the stars it filters by. */
+  .toggle-btn.state-favorites{ border-color:#F0C868; color:#F0C868; }
+  .toggle-btn.state-favorites .dot{ background:#F0C868; }
   .toggle-btn.state-tylers .dot{ background:var(--tag-tylers-pick); box-shadow:0 0 0 1px rgba(200,204,210,0.5); }
 
   .sort-pair{ display:flex; gap:8px; }
@@ -2549,6 +2552,13 @@
           <span id="stockToggleLabel">In stock only</span>
           <span class="dot"></span>
         </button>
+        <!-- Only the listings the visitor has starred (see PERSONAL LISTS). -->
+        <div class="toggle-row">
+          <button type="button" class="toggle-btn" id="favoritesOnlyToggle" aria-pressed="false">
+            <span>My Favorites</span>
+            <span class="dot"></span>
+          </button>
+        </div>
         <!-- Diagnostic: shows which listings isTylersPick() matches,
              instead of spotting the badge while scrolling. -->
         <div class="toggle-row">
@@ -2828,6 +2838,14 @@
         <div class="cart-hint">Leave blank for no restriction.</div>
       </div>
 
+      <div class="cart-field">
+        <span class="field-label">Favorites</span>
+        <button type="button" class="toggle-btn" id="advFavoritesOnlyToggle">
+          <span>Only my favorites</span>
+          <span class="dot"></span>
+        </button>
+      </div>
+
       <div class="cart-field adv-tea-only">
         <span class="field-label">Tyler's Picks</span>
         <button type="button" class="toggle-btn" id="advTylersPickToggle">
@@ -3098,6 +3116,7 @@
     yearTo: null,        // inclusive upper bound, or null
     stock: 'in',        // 'any' | 'in' | 'out'
     tylersPickOnly: false, // plain on/off - see isTylersPick()
+    favoritesOnly: false,  // "My Favorites": only starred listings (see PERSONAL LISTS)
     sortField: 'price',  // 'price' | 'grams' | 'year' (grams/year are tea only - accessories always sort by price_usd)
     sortDir: 'asc',       // 'asc' | 'desc'
     showAll: false,      // false = top 10 only, true = every match
@@ -4926,6 +4945,21 @@
     tylersPickToggle.classList.toggle('state-tylers', state.tylersPickOnly);
   }
 
+  // "My Favorites" filter toggle - plain on/off. Unlike Tyler's Picks it
+  // applies to teaware too (a teapot can be starred), so setDataset() leaves
+  // it alone.
+  const favoritesOnlyToggle = document.getElementById('favoritesOnlyToggle');
+  favoritesOnlyToggle.addEventListener('click', () => {
+    state.favoritesOnly = !state.favoritesOnly;
+    applyFavoritesOnlyButtonUI();
+    state.showAll = false; // editing a filter drops back to the top 10
+    render();
+  });
+  function applyFavoritesOnlyButtonUI(){
+    favoritesOnlyToggle.classList.toggle('state-favorites', state.favoritesOnly);
+    favoritesOnlyToggle.setAttribute('aria-pressed', String(state.favoritesOnly));
+  }
+
   // -------------------------------------------------------------------
   // Tyler's Picks filter toggle - plain on/off, no cycling.
   // -------------------------------------------------------------------
@@ -5155,6 +5189,7 @@
     n += (state.priceFrom !== null || state.priceTo !== null) ? 1 : 0;
     n += state.stock !== 'in' ? 1 : 0;
     n += state.tylersPickOnly ? 1 : 0;
+    n += state.favoritesOnly ? 1 : 0;
     n += state.showWhatsNew ? 1 : 0;
     return n;
   }
@@ -5168,6 +5203,7 @@
   document.getElementById('yearSelect').addEventListener('change', (e) => { state.year = e.target.value; state.showAll = false; render(); });
   document.getElementById('resetBtn').addEventListener('click', () => {
     state.sites = []; state.types = []; state.year = 'all'; state.stock = 'in'; state.tylersPickOnly = false;
+    state.favoritesOnly = false;
     state.sitesExclude = false;
     state.flavorCategories = [];
     state.flavorNotes = [];
@@ -5203,6 +5239,7 @@
     document.getElementById('priceToInput').value = '';
     applyStockButtonUI();
     applyTylersPickButtonUI();
+    applyFavoritesOnlyButtonUI();
     applySortButtonUI();
     applyYearModeUI();
     applyVisualizeButtonUI();
@@ -5280,6 +5317,7 @@
     // isTylersPick() is false for rows with no entry, so this is safe
     // regardless of dataset.
     if (s.tylersPickOnly && !isTylersPick(r)) return false;
+    if (s.favoritesOnly && !isFavorite(listingKey(r))) return false;
     return true;
   }
 
@@ -6880,7 +6918,7 @@
   // a request to narrow that search, so render() then switches the search to
   // "within filters" (see searchScope) rather than ignoring the click.
   const FILTER_SIGNATURE_KEYS = ['dataset', 'sites', 'sitesExclude', 'types', 'year', 'yearMode',
-    'yearFrom', 'yearTo', 'stock', 'tylersPickOnly', 'gramsFrom', 'gramsTo', 'flavorCategories',
+    'yearFrom', 'yearTo', 'stock', 'tylersPickOnly', 'favoritesOnly', 'gramsFrom', 'gramsTo', 'flavorCategories',
     'flavorNotes', 'accessoryGroups', 'accessorySubs', 'formFactors', 'priceFrom', 'priceTo', 'showWhatsNew'];
   function filterSignature(){
     return JSON.stringify(FILTER_SIGNATURE_KEYS.map(k => state[k]));
@@ -6933,6 +6971,10 @@
         empty.innerHTML = state.searchScope === 'filters'
           ? '<h2>No matches</h2><p>Nothing within your current filters matches that search. Try fewer or different keywords, or search every listing with the link under the search box.</p>'
           : '<h2>No matches</h2><p>No listing matches that search. Try fewer keywords, or a different spelling.</p>';
+      } else if (state.favoritesOnly && favorites.length === 0){
+        empty.innerHTML = '<h2>No favorites yet</h2><p>Click the ☆ under any listing\'s number to star it, then "My Favorites" shows just those. Turn the filter off to see everything again.</p>';
+      } else if (state.favoritesOnly){
+        empty.innerHTML = '<h2>None of your favorites match</h2><p>"My Favorites" is on, and none of your starred listings pass the other filters - try "Any availability", the other dataset (Tea / Teaware &amp; Tools), or "Reset all filters".</p>';
       } else {
         empty.innerHTML = state.showWhatsNew
           ? '<h2>No new listings</h2><p>Nothing in the most recent run is new compared to ' + dbPreviousRunDate + '. Try loosening a filter, or click "Back to all listings" to go back to all listings.</p>'
@@ -8356,7 +8398,9 @@
   let favorites = loadPersonalList(FAVORITES_STORAGE_KEY);   // [snapshot]
   let basket = loadPersonalList(BASKET_STORAGE_KEY);         // [snapshot + qty]
   basket.forEach(e => { e.qty = Math.min(BASKET_MAX_QTY, Math.max(1, parseInt(e.qty, 10) || 1)); });
-  const isFavorite = key => favorites.some(e => e.key === key);
+  // Set of starred keys - the "My Favorites" filter asks about every row.
+  let favoriteKeySet = new Set(favorites.map(e => e.key));
+  const isFavorite = key => favoriteKeySet.has(key);
   const basketEntry = key => basket.find(e => e.key === key) || null;
 
   // key -> the listing in the currently loaded data, rebuilt when allRows is
@@ -8404,6 +8448,10 @@
   // render(), so the page doesn't jump): the header counts, every star and
   // basket button on screen, and whichever panel is open.
   function afterPersonalChange(){
+    favoriteKeySet = new Set(favorites.map(e => e.key));
+    // With "My Favorites" on, starring or unstarring changes what the list
+    // shows, so it has to redraw.
+    if (state.favoritesOnly) render();
     updatePersonalCounts();
     document.querySelectorAll('.fav-star[data-key]').forEach(applyStarState);
     document.querySelectorAll('.basket-add[data-key]').forEach(applyBasketButtonState);
@@ -8660,10 +8708,9 @@
     const itemCount = basket.reduce((n, e) => n + e.qty, 0);
     panel.appendChild(panelHead(panel, basketBtn, 'Your basket' + (itemCount ? ' (' + itemCount + ')' : '')));
     panel.appendChild(el('p', 'pp-intro',
-      'Pick teas yourself with "Add to Basket" and they collect here, grouped by shop - each shop checks out ' +
-      'separately. For Shopify shops, "Check Out on…" opens that shop\'s own cart with these items and quantities ' +
-      'already in it, and you finish the order there. Mei Leaf, TWG Tea and Verdant Tea can\'t take a pre-filled ' +
-      'cart, so open those listings to buy them. Your basket is saved in this browser.'));
+      'Hand-pick teas yourself with "Add to Basket" and they collect here, grouped by shop. For all ' +
+      'Shopify-based shops, "Check Out on…" opens that shop\'s own cart with your picks already in it, and ' +
+      'you finish the order there.'));
     if (!basket.length){
       panel.appendChild(el('div', 'pp-empty', 'Your basket is empty - click "Add to Basket" on any listing to start one.'));
       return;
@@ -8788,7 +8835,8 @@
   function advDefaultFilters(){
     return {
       dataset: 'tea', sites: [], sitesExclude: false, types: [], year: 'all', yearMode: 'range',
-      yearFrom: null, yearTo: null, stock: 'in', tylersPickOnly: false, gramsFrom: null, gramsTo: null,
+      yearFrom: null, yearTo: null, stock: 'in', tylersPickOnly: false, favoritesOnly: false,
+      gramsFrom: null, gramsTo: null,
       flavorCategories: [], flavorNotes: [], accessoryGroups: [], accessorySubs: [], formFactors: [],
       priceFrom: null, priceTo: null, showWhatsNew: false,
     };
@@ -8950,6 +8998,7 @@
       document.getElementById(id).value = d[field] === null || d[field] === undefined ? '' : String(d[field]);
     });
     document.getElementById('advTylersPickToggle').classList.toggle('state-tylers', d.tylersPickOnly);
+    document.getElementById('advFavoritesOnlyToggle').classList.toggle('state-favorites', d.favoritesOnly);
   }
 
   // Live count of what "Search" would show. Debounced: typing a keyword
@@ -9024,6 +9073,7 @@
     setBox('priceToInput', state.priceTo);
     applyStockButtonUI();
     applyTylersPickButtonUI();
+    applyFavoritesOnlyButtonUI();
     applyYearModeUI();
     applyWhatsNewButtonUI();
   }
@@ -9093,7 +9143,7 @@
     // Mirrors setDataset(): what belongs to the other dataset is cleared, so
     // nothing hidden keeps narrowing the count.
     const keep = { stock: advDraft.stock, priceFrom: advDraft.priceFrom, priceTo: advDraft.priceTo,
-                   showWhatsNew: advDraft.showWhatsNew };
+                   showWhatsNew: advDraft.showWhatsNew, favoritesOnly: advDraft.favoritesOnly };
     advDraft = Object.assign(advDefaultFilters(), keep, { dataset: btn.dataset.value });
     renderAdvControls();
     renderAdvBoxes();
@@ -9110,6 +9160,11 @@
     const btn = e.target.closest('.sort-btn');
     if (!btn) return;
     advTitlesOnly = btn.dataset.value === 'titles';
+    renderAdvControls();
+    scheduleAdvCount();
+  });
+  document.getElementById('advFavoritesOnlyToggle').addEventListener('click', () => {
+    advDraft.favoritesOnly = !advDraft.favoritesOnly;
     renderAdvControls();
     scheduleAdvCount();
   });
