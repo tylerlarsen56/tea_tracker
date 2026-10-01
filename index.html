@@ -9947,7 +9947,12 @@
       const narrow = vizIsNarrow();
       const W = VIZ_WIDTH, padX = narrow ? 30 : 24;
       const font = narrow ? 26 : 10.5;
-      const xOf = v => padX + v / 100 * (W - 2 * padX);
+      // The scale spans the shops, not 0-100: 10 points either side of the
+      // lowest and highest average (clamped to 0-100), so they spread out
+      // instead of bunching in the middle third of the bar.
+      const minPct = ranked[0].avgPct, maxPct = ranked[ranked.length - 1].avgPct;
+      const lo = Math.max(0, Math.floor(minPct - 10)), hi = Math.min(100, Math.ceil(maxPct + 10));
+      const xOf = v => padX + (v - lo) / (hi - lo) * (W - 2 * padX);
       // Shops that sit close together stack upward: each dot takes the lowest
       // level where it doesn't touch a dot already placed on that level. The
       // levels are worked out first, so the track sits just low enough.
@@ -9963,11 +9968,15 @@
       const step = r * 2 + (narrow ? 8 : 4);
       const trackY = r + 6 + Math.max(...lifts) * step;
       const H = trackY + (narrow ? 160 : 70);
+      // The bar's colors are the pctl badge's, for the stretch of 0-100 shown.
       let svg = '<defs><linearGradient id="spGrad" x1="0" x2="1">' +
-        [0, 25, 50, 75, 100].map(v => '<stop offset="' + v + '%" stop-color="' + percentileColor(v) + '"/>').join('') +
+        [0, 25, 50, 75, 100].map(t => '<stop offset="' + t + '%" stop-color="' + percentileColor(lo + (hi - lo) * t / 100) + '"/>').join('') +
         '</linearGradient></defs>';
       svg += '<rect x="' + padX + '" y="' + (trackY - 3) + '" width="' + (W - 2 * padX) + '" height="6" rx="3" fill="url(#spGrad)" opacity="0.55"/>';
-      [0, 25, 50, 75, 100].forEach(v => {
+      const tickStep = (hi - lo) > 45 ? 10 : 5;
+      const ticks = [];
+      for (let v = Math.ceil(lo / tickStep) * tickStep; v <= hi; v += tickStep) ticks.push(v);
+      ticks.forEach(v => {
         svg += '<text x="' + xOf(v).toFixed(1) + '" y="' + (trackY + (narrow ? 44 : 22)) + '" text-anchor="middle" font-size="' + font +
           '" font-family="IBM Plex Mono, monospace" fill="' + VIZ_FAINT_COLOR + '">' + v + '</text>';
       });
@@ -9997,11 +10006,12 @@
           const lx = Math.min(W - padX, Math.max(padX, x));
           const anchor = lx - x > 1 ? 'start' : x - lx > 1 ? 'end' : (x < W * 0.15 ? 'start' : x > W * 0.85 ? 'end' : 'middle');
           svg += '<text x="' + lx.toFixed(1) + '" y="' + (trackY + (narrow ? 86 : 40)) + '" text-anchor="' + anchor + '" font-size="' + font +
-            '" font-weight="600" font-family="IBM Plex Sans, sans-serif" fill="#D1A052">▲ ' + escapeXml(s.site) + ' · ' + Math.round(s.avgPct) + '</text>';
+            '" font-weight="600" font-family="IBM Plex Sans, sans-serif" fill="#D1A052">' + escapeXml(s.site) + ' · ' + Math.round(s.avgPct) + '</text>';
         }
         svg += '</g>';
       });
-      scaleBox.innerHTML = '<div class="sp-scale-title">Where each shop sits on price - average percentile of its teas (50 = the middle of all teas here). Click a dot to switch shops.</div>' +
+      scaleBox.innerHTML = '<div class="sp-scale-title">Where each shop sits on price - average percentile of its teas (50 = the middle of all teas here; the scale shows ' +
+        lo + ' to ' + hi + '). Click a dot to switch shops.</div>' +
         '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' +
         escapeXml('Shops by average price percentile: ' + ranked.map(s => s.site + ' ' + Math.round(s.avgPct)).join(', ')) + '">' + svg + '</svg>';
       scaleBox.querySelectorAll('.sp-mark').forEach(g => g.addEventListener('click', () => {
