@@ -1004,6 +1004,11 @@
   }
   .viz-donut svg{ width:100%; height:auto; display:block; }
   .viz-donut-slice{ transition:opacity 0.12s ease; cursor:default; }
+  /* Slices and list names that filter the listings when clicked. */
+  .viz-donut-click{ cursor:pointer; }
+  .viz-donut-click:focus-visible{ outline:none; opacity:0.78; stroke:var(--ink); stroke-width:1.5; }
+  .viz-note-link{ cursor:pointer; }
+  .viz-note-link:hover span:last-child{ text-decoration:underline; text-underline-offset:2px; }
   .viz-donut-slice:hover{ opacity:0.78; }
   .viz-donut-center-value{
     font-family:var(--font-display);
@@ -5751,6 +5756,32 @@
     return v === null ? '—' : '$' + v.toFixed(2) + '/g';
   }
 
+  // The donut's slices (and the names in its list) as a shortcut into the
+  // Flavor Profile filter. A category replaces whatever flavors were ticked
+  // with that one category; a single note switches Advanced Flavor Search on
+  // - the only mode in which notes can be ticked - and ticks just that note.
+  // Clicking the one flavor already selected clears the filter again, so the
+  // same slice takes you in and back out.
+  function filterByFlavor(category, noteKey){
+    const onlyThis = noteKey
+      ? (state.flavorNotes.length === 1 && state.flavorNotes[0] === noteKey && state.flavorCategories.length === 0)
+      : (state.flavorCategories.length === 1 && state.flavorCategories[0] === category && state.flavorNotes.length === 0);
+    if (onlyThis){
+      state.flavorCategories = [];
+      state.flavorNotes = [];
+    } else if (noteKey){
+      state.flavorAdvanced = true;
+      state.flavorCategories = [];
+      state.flavorNotes = [noteKey];
+    } else {
+      state.flavorCategories = [category];
+      state.flavorNotes = [];
+    }
+    renderFlavorMenu();
+    state.showAll = false; // editing a filter drops back to the top 10
+    render();
+  }
+
   function buildNoteDonut(filtered, wrap){
     const { ordered, totalNotes, uniqueNotes, rowsWithNotes } = tallyNoteCategories(filtered);
 
@@ -5760,7 +5791,7 @@
       ? 'None of the currently filtered listings have tasting notes.'
       : ('Across ' + totalNotes + ' tasting note' + (totalNotes === 1 ? '' : 's') +
          ' (' + uniqueNotes + ' unique) on ' + rowsWithNotes + ' of ' + filtered.length +
-         ' matching listing' + (filtered.length === 1 ? '' : 's'));
+         ' matching listing' + (filtered.length === 1 ? '' : 's') + ' · click a slice or a name to filter by it');
     wrap.appendChild(sub);
 
     if (totalNotes === 0){
@@ -5790,10 +5821,11 @@
       const end = cursor + sweep - gap / 2;
       if (end > start){
         const pct = (count / totalNotes * 100);
-        slices += '<path class="viz-donut-slice" d="' + donutArcPath(cx, cy, start, end, catOuter, catInner) +
+        slices += '<path class="viz-donut-slice viz-donut-click" data-category="' + escapeXml(category) + '" tabindex="0" role="button" d="' +
+          donutArcPath(cx, cy, start, end, catOuter, catInner) +
           '" fill="' + flavorCategoryColor(category) + '">' +
           '<title>' + escapeXml(category) + ': ' + count + ' note' + (count === 1 ? '' : 's') +
-          ' (' + pct.toFixed(1) + '%)</title></path>';
+          ' (' + pct.toFixed(1) + '%) - click to filter by ' + escapeXml(category) + '</title></path>';
       }
       // Outer band: this category's notes share out exactly its arc, in the
       // same most-common-first order as the list.
@@ -5806,11 +5838,13 @@
           const ne = noteCursor + nSweep - nGap / 2;
           noteCursor += nSweep;
           if (ne <= ns) return;
-          slices += '<path class="viz-donut-slice" d="' + donutArcPath(cx, cy, ns, ne, DONUT_NOTE_OUTER, DONUT_NOTE_INNER) +
+          slices += '<path class="viz-donut-slice viz-donut-click" data-category="' + escapeXml(category) + '" data-note="' + escapeXml(n.key) +
+            '" tabindex="0" role="button" d="' + donutArcPath(cx, cy, ns, ne, DONUT_NOTE_OUTER, DONUT_NOTE_INNER) +
             '" fill="' + noteColor(n.key, category) + '">' +
             '<title>' + escapeXml(noteLabel(n.key)) + ' (' + escapeXml(category) + '): ' + n.count +
             ' note' + (n.count === 1 ? '' : 's') + ' (' + (n.count / totalNotes * 100).toFixed(1) + '% of all, ' +
-            (n.count / count * 100).toFixed(1) + '% of ' + escapeXml(category) + ')</title></path>';
+            (n.count / count * 100).toFixed(1) + '% of ' + escapeXml(category) + ') - click to filter by ' +
+            escapeXml(noteLabel(n.key)) + '</title></path>';
         });
       }
       cursor += sweep;
@@ -5826,6 +5860,13 @@
       '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" class="viz-donut-center-value">' + uniqueNotes + '</text>' +
       '<text x="' + cx + '" y="' + (cy + 14) + '" text-anchor="middle" class="viz-donut-center-label">unique notes</text>' +
       '</svg>';
+    // Every slice is a shortcut to the Flavor Profile filter: a category
+    // slice ticks that category, a note slice (outer ring) ticks that note.
+    donut.querySelectorAll('.viz-donut-click').forEach(slice => {
+      const go = () => filterByFlavor(slice.dataset.category, slice.dataset.note || null);
+      slice.addEventListener('click', go);
+      slice.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); } });
+    });
     row.appendChild(donut);
 
     // ---- the ranked list ----
@@ -5874,6 +5915,9 @@
       const label = document.createElement('span');
       label.textContent = category;
       name.appendChild(label);
+      name.classList.add('viz-note-link');
+      name.title = 'Filter the listings by ' + category;
+      name.addEventListener('click', () => filterByFlavor(category, null));
 
       barCell(count / maxCount, flavorCategoryColor(category));
       cell('viz-note-count', String(count));
@@ -5895,7 +5939,9 @@
         const nLabel = document.createElement('span');
         nLabel.textContent = noteLabel(n.key);
         nName.appendChild(nLabel);
-        nName.title = noteLabel(n.key) + ' - on ' + n.listings + ' listing' + (n.listings === 1 ? '' : 's');
+        nName.title = noteLabel(n.key) + ' - on ' + n.listings + ' listing' + (n.listings === 1 ? '' : 's') + ' - click to filter by it';
+        nName.classList.add('viz-note-link');
+        nName.addEventListener('click', () => filterByFlavor(category, n.key));
 
         barCell(n.count / maxNoteCount, color);
         cell('viz-note-count', String(n.count));
