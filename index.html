@@ -1006,6 +1006,10 @@
   .viz-donut-slice{ transition:opacity 0.12s ease; cursor:default; }
   /* Slices and list names that filter the listings when clicked. */
   .viz-donut-click{ cursor:pointer; }
+  /* No focus box: a clicked SVG slice is focused, and the browser's default
+     ring for that is a rounded rectangle around the slice's bounding box,
+     cutting across the donut. Keyboard focus is shown on the slice itself. */
+  .viz-donut-click:focus{ outline:none; }
   .viz-donut-click:focus-visible{ outline:none; opacity:0.78; stroke:var(--ink); stroke-width:1.5; }
   .viz-note-link{ cursor:pointer; }
   .viz-note-link:hover span:last-child{ text-decoration:underline; text-underline-offset:2px; }
